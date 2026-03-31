@@ -76,15 +76,27 @@ app.whenReady().then(async () => {
   // Настройка автообновления самой студии
   autoUpdater.autoDownload = false;
   
-  if (!isDev) {
-    autoUpdater.checkForUpdates().catch(err => {
-      console.error('Ошибка проверки обновлений:', err);
-    });
-  }
+  let isStartupCheck = true;
+
+  const checkAppUpdates = () => {
+    if (!isDev) {
+      autoUpdater.checkForUpdates().catch(err => {
+        console.error('Ошибка проверки обновлений:', err);
+      });
+    }
+  };
+
+  checkAppUpdates();
+  
+  // Проверять обновления каждые 30 минут
+  setInterval(() => {
+    isStartupCheck = false;
+    checkAppUpdates();
+  }, 30 * 60 * 1000);
 
   autoUpdater.on('update-available', (info) => {
     if (mainWindow) {
-      mainWindow.webContents.send('studio-update-available', info);
+      mainWindow.webContents.send('studio-update-available', { ...info, isStartupCheck });
     }
   });
 
@@ -280,28 +292,21 @@ ipcMain.handle('app:init-workspace', async (event, mcPath) => {
       try { localVersion = (await fs.readFile(localVersionPath, 'utf-8')).trim(); } catch (e) {}
 
       if (serverVersion !== localVersion) {
-        log(`Найдена версия мода: ${serverVersion}. Загрузка...`);
-        // Теперь скачиваем файл с названием, включающим версию:
-        const modFileName = `spraute_engine-${serverVersion}.jar`;
-        const modRes = await fetch(`${BASE_URL}/${modFileName}`);
+        log(`Найдена версия мода: ${serverVersion}.`);
         
-        if (modRes.ok) {
-          // Удаляем старые версии мода
-          const mods = await fs.readdir(modsPath).catch(() => []);
-          for (const m of mods) {
-            if (m.toLowerCase().includes('spraute') && m.endsWith('.jar')) {
-              await fs.unlink(path.join(modsPath, m)).catch(() => {});
-            }
+        let modNotes = 'Описание обновления недоступно.';
+        try {
+          const notesRes = await fetch(`${BASE_URL}/mod_release_notes.md`);
+          if (notesRes.ok) {
+            modNotes = await notesRes.text();
           }
-          // Сохраняем новый мод
-          const dest = path.join(modsPath, modFileName);
-          const buf = await modRes.arrayBuffer();
-          await fs.writeFile(dest, Buffer.from(buf));
-          
-          await fs.writeFile(localVersionPath, serverVersion);
-          log('Мод успешно обновлен!');
-        } else {
-          log(`Файл мода ${modFileName} не найден на сервере (404).`);
+        } catch (e) {}
+
+        if (mainWindow) {
+          mainWindow.webContents.send('mod-update-available', {
+            version: serverVersion,
+            notes: modNotes
+          });
         }
       } else {
         log(`Мод актуален (версия ${localVersion}).`);
@@ -352,5 +357,36 @@ ipcMain.handle('app:set-titlebar', (event, color, symbolColor) => {
       color: color,
       symbolColor: symbolColor
     });
+  }
+});
+
+ipcMain.handle('mod-update:download', async (event, serverVersion) => {
+  try {
+    const mcPath = store.get('minecraftPath');
+    const modsPath = path.join(mcPath, 'mods');
+    const sprautePath = path.join(mcPath, 'spraute_engine');
+    const localVersionPath = path.join(sprautePath, 'version.txt');
+    const BASE_URL = 'http://85.239.59.203';
+    
+    const modFileName = `spraute_engine-${serverVersion}.jar`;
+    const modRes = await fetch(`${BASE_URL}/${modFileName}`);
+    
+    if (modRes.ok) {
+      const mods = await fs.readdir(modsPath).catch(() => []);
+      for (const m of mods) {
+        if (m.toLowerCase().includes('spraute') && m.endsWith('.jar')) {
+          await fs.unlink(path.join(modsPath, m)).catch(() => {});
+        }
+      }
+      const dest = path.join(modsPath, modFileName);
+      const buf = await modRes.arrayBuffer();
+      await fs.writeFile(dest, Buffer.from(buf));
+      await fs.writeFile(localVersionPath, serverVersion);
+      return { success: true };
+    } else {
+      return { success: false, error: 'Файл мода не найден на сервере (404)' };
+    }
+  } catch (e) {
+    return { success: false, error: e.message };
   }
 });

@@ -1936,14 +1936,110 @@ const studioUpdateBar = document.getElementById('studio-update-bar');
 const studioUpdateActions = document.getElementById('studio-update-actions');
 const studioUpdateInstallActions = document.getElementById('studio-update-install-actions');
 
+let pendingStudioUpdate = null;
+
 window.spraute.onStudioUpdateAvailable((info) => {
   document.getElementById('studio-update-version').innerText = `Версия: ${info.version}`;
   document.getElementById('studio-update-notes').innerHTML = info.releaseNotes || 'Улучшения стабильности и новые функции.';
   
-  studioUpdateModal.classList.remove('hidden');
+  if (info.isStartupCheck) {
+    // Крупное окно при старте
+    studioUpdateModal.classList.remove('hidden');
+    setTimeout(() => {
+      studioUpdateBox.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+  } else {
+    // Небольшое окно (toast) во время работы
+    pendingStudioUpdate = () => {
+      studioUpdateModal.classList.remove('hidden');
+      setTimeout(() => {
+        studioUpdateBox.classList.remove('scale-95', 'opacity-0');
+      }, 10);
+    };
+    
+    document.getElementById('update-toast-title').innerText = 'Обновление Студии';
+    document.getElementById('update-toast-desc').innerText = `Доступна версия ${info.version}`;
+    const toast = document.getElementById('update-toast');
+    toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+  }
+});
+
+// Обработка кликов по toast
+document.getElementById('btn-update-toast-ignore').addEventListener('click', () => {
+  const toast = document.getElementById('update-toast');
+  toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+});
+
+document.getElementById('btn-update-toast-show-main').addEventListener('click', () => {
+  const toast = document.getElementById('update-toast');
+  toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+  if (pendingStudioUpdate) pendingStudioUpdate();
+  if (pendingModUpdate) pendingModUpdate();
+});
+
+// Логика обновления мода
+let pendingModUpdate = null;
+let currentModVersionToDownload = null;
+
+const modUpdateModal = document.getElementById('mod-update-modal');
+const modUpdateBox = document.getElementById('mod-update-box');
+const btnModUpdateSkip = document.getElementById('btn-mod-update-skip');
+const btnModUpdateDownload = document.getElementById('btn-mod-update-download');
+
+window.spraute.onModUpdateAvailable((info) => {
+  document.getElementById('mod-update-version').innerText = `Версия: ${info.version}`;
+  document.getElementById('mod-update-notes').innerHTML = info.notes || 'Описание недоступно.';
+  currentModVersionToDownload = info.version;
+  
+  // Всегда показываем крупное окно, так как это происходит при загрузке проекта
+  modUpdateModal.classList.remove('hidden');
   setTimeout(() => {
-    studioUpdateBox.classList.remove('scale-95', 'opacity-0');
+    modUpdateBox.classList.remove('scale-95', 'opacity-0');
   }, 10);
+});
+
+btnModUpdateSkip.addEventListener('click', () => {
+  modUpdateBox.classList.add('scale-95', 'opacity-0');
+  setTimeout(() => {
+    modUpdateModal.classList.add('hidden');
+  }, 300);
+});
+
+btnModUpdateDownload.addEventListener('click', async () => {
+  btnModUpdateDownload.innerText = 'Загрузка...';
+  btnModUpdateDownload.classList.add('opacity-50', 'pointer-events-none');
+  btnModUpdateSkip.classList.add('hidden');
+  
+  try {
+    const res = await window.spraute.downloadModUpdate(currentModVersionToDownload);
+    if (res.success) {
+      btnModUpdateDownload.innerText = `Мод обновлен до версии ${currentModVersionToDownload}!`;
+      btnModUpdateDownload.classList.remove('bg-secondary');
+      btnModUpdateDownload.classList.add('bg-green-600');
+      
+      setTimeout(() => {
+        modUpdateBox.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+          modUpdateModal.classList.add('hidden');
+          // Восстанавливаем кнопки
+          btnModUpdateDownload.innerText = 'Обновить мод';
+          btnModUpdateDownload.classList.add('bg-secondary');
+          btnModUpdateDownload.classList.remove('bg-green-600', 'opacity-50', 'pointer-events-none');
+          btnModUpdateSkip.classList.remove('hidden');
+        }, 300);
+      }, 2000);
+    } else {
+      alert('Ошибка при скачивании мода: ' + res.error);
+      btnModUpdateDownload.innerText = 'Ошибка';
+      setTimeout(() => {
+        btnModUpdateDownload.innerText = 'Повторить';
+        btnModUpdateDownload.classList.remove('opacity-50', 'pointer-events-none');
+        btnModUpdateSkip.classList.remove('hidden');
+      }, 2000);
+    }
+  } catch (err) {
+    alert(err.message);
+  }
 });
 
 btnStudioUpdateSkip.addEventListener('click', () => {

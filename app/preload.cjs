@@ -34,5 +34,12 @@ contextBridge.exposeInMainWorld('spraute', {
   },
   downloadStudioUpdate: () => ipcRenderer.invoke('studio-update:download'),
   installStudioUpdate: () => ipcRenderer.invoke('studio-update:install'),
+  
+  onModUpdateAvailable: (callback) => {
+    ipcRenderer.removeAllListeners('mod-update-available');
+    ipcRenderer.on('mod-update-available', (_e, info) => callback(info));
+  },
+  downloadModUpdate: (version) => ipcRenderer.invoke('mod-update:download', version),
+  
   setTitleBarColors: (color, symbolColor) => ipcRenderer.invoke('app:set-titlebar', color, symbolColor)
 });
