@@ -636,6 +636,74 @@ function setStatus(msg) {
   }, 3000);
 }
 
+// ====== Drag and Drop ======
+let draggedItem = null; // { path, name, isDir }
+
+function setupDragAndDrop(el, item, wrapper) {
+  el.setAttribute('draggable', 'true');
+  
+  el.addEventListener('dragstart', (e) => {
+    draggedItem = { path: item.rel, name: item.name, isDir: item.isDir };
+    el.classList.add('opacity-50');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.rel);
+  });
+  
+  el.addEventListener('dragend', () => {
+    el.classList.remove('opacity-50');
+    document.querySelectorAll('.drag-over').forEach(n => n.classList.remove('drag-over', 'bg-primary/20', 'border', 'border-dashed', 'border-primary'));
+    draggedItem = null;
+  });
+  
+  // Только папки могут принимать файлы
+  if (item.isDir) {
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (draggedItem && draggedItem.path !== item.rel && !draggedItem.path.startsWith(item.rel + '/')) {
+        e.dataTransfer.dropEffect = 'move';
+        el.classList.add('drag-over', 'bg-primary/20', 'border', 'border-dashed', 'border-primary');
+      }
+    });
+    
+    el.addEventListener('dragleave', () => {
+      el.classList.remove('drag-over', 'bg-primary/20', 'border', 'border-dashed', 'border-primary');
+    });
+    
+    el.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      el.classList.remove('drag-over', 'bg-primary/20', 'border', 'border-dashed', 'border-primary');
+      
+      if (draggedItem && draggedItem.path !== item.rel) {
+        const srcPath = draggedItem.path;
+        const srcName = draggedItem.name;
+        const destPath = item.rel + '/' + srcName;
+        
+        // Проверяем что не пытаемся переместить папку в саму себя
+        if (srcPath.startsWith(item.rel + '/')) return;
+        
+        try {
+          const exists = await window.spraute.exists(destPath);
+          if (exists) {
+            const confirm = await appConfirm(`"${srcName}" уже существует в "${item.name}". Заменить?`);
+            if (!confirm) return;
+            if (draggedItem.isDir) {
+              await window.spraute.rmdir(destPath);
+            } else {
+              await window.spraute.unlink(destPath);
+            }
+          }
+          
+          await window.spraute.rename(srcPath, destPath);
+          await loadDirectory('');
+          setStatus(`Перемещено: ${srcName} → ${item.name}/`);
+        } catch (err) {
+          alert(`Ошибка перемещения: ${err.message}`);
+        }
+      }
+    });
+  }
+}
+
 // Загрузка дерева файлов (рекурсивная реализация)
 async function loadDirectory(relPath, containerEl = null, level = 0, forceExpand = false) {
   const treeContainer = containerEl || document.getElementById('file-tree');
@@ -749,6 +817,9 @@ async function loadDirectory(relPath, containerEl = null, level = 0, forceExpand
         e.stopPropagation();
         showContextMenu(e.pageX, e.pageY, item.rel, item.isDir, wrapper);
       });
+      
+      // Drag and Drop
+      setupDragAndDrop(el, item, wrapper);
     }
   } catch (err) {
     if (!containerEl) treeContainer.innerHTML = `<div class="px-4 py-2 text-red-400">Ошибка: ${err.message}</div>`;
@@ -1833,6 +1904,62 @@ window.spraute.onStudioUpdateDownloaded(() => {
 
 btnStudioUpdateInstall.addEventListener('click', () => {
   window.spraute.installStudioUpdate();
+});
+
+// Drag and Drop на редактор кода (вставка пути к файлу)
+document.addEventListener('DOMContentLoaded', () => {
+  const editorMount = document.getElementById('editor-mount');
+  
+  editorMount.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (draggedItem && !draggedItem.isDir) {
+      e.dataTransfer.dropEffect = 'copy';
+      editorMount.classList.add('ring-2', 'ring-primary', 'ring-inset');
+    }
+  });
+
+  editorMount.addEventListener('dragleave', () => {
+    editorMount.classList.remove('ring-2', 'ring-primary', 'ring-inset');
+  });
+
+  editorMount.addEventListener('drop', (e) => {
+    e.preventDefault();
+    editorMount.classList.remove('ring-2', 'ring-primary', 'ring-inset');
+    
+    if (draggedItem && !draggedItem.isDir && currentEditor) {
+      const filePath = draggedItem.path;
+      const fileName = draggedItem.name;
+      const ext = fileName.includes('.') ? fileName.split('.').pop() : '';
+      
+      // Формируем текст для вставки
+      let insertText = `"${filePath}"`;
+      
+      // Для разных типов файлов - разные шаблоны
+      if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
+        insertText = `texture = "${filePath}"`;
+      } else if (ext === 'json' && filePath.includes('geo')) {
+        insertText = `model = "${filePath}"`;
+      } else if (ext === 'json' && filePath.includes('animation')) {
+        insertText = `animation = "${filePath}"`;
+      }
+      
+      // Вставляем в позицию курсора
+      const cursor = currentEditor.state.selection.main.head;
+      currentEditor.dispatch({
+        changes: { from: cursor, insert: insertText },
+        selection: { anchor: cursor + insertText.length }
+      });
+      
+      // Помечаем как изменённый
+      const tab = openTabs.find(t => t.path === activeTabPath);
+      if (tab) {
+        tab.isDirty = true;
+        renderTabs();
+      }
+      
+      setStatus(`Вставлено: ${fileName}`);
+    }
+  });
 });
 
 // Запуск при загрузке DOM
