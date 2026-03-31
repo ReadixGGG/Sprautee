@@ -6,15 +6,12 @@ const { autoUpdater } = require('electron-updater');
 let store;
 let mainWindow;
 
-function initStore() {
-  const Store = require('electron-store');
+async function initStore() {
+  const { default: Store } = await import('electron-store');
   store = new Store({ name: 'spraute-studio' });
 }
 
 const isDev = !app.isPackaged;
-
-// Отключаем GPU-ускорение для совместимости с некоторыми системами
-app.disableHardwareAcceleration();
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('org.zonarstudio.spraute.studio');
@@ -70,7 +67,7 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  initStore();
+  await initStore();
   createWindow();
 
   // Настройка автообновления самой студии
