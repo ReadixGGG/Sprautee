@@ -3,6 +3,8 @@ package org.zonarstudio.spraute_engine.script.function;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.zonarstudio.spraute_engine.script.function.SnapshotFunctions;
+
 public class FunctionRegistry {
     private static final Map<String, ScriptFunction> FUNCTIONS = new HashMap<>();
 
@@ -52,6 +54,10 @@ public class FunctionRegistry {
         register(new SoundFunctions.StopSound());
         register(new GetPlayerFunction());
         register(new SetBlockFunction());
+        register(new SnapshotFunctions.SaveSnapshot());
+        register(new SnapshotFunctions.LoadSnapshot());
+        register(new JavaFunctions.JavaClassFunction());
+        register(new JavaFunctions.JavaNewFunction());
     }
 
     public static void register(ScriptFunction function) {

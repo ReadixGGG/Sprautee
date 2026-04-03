@@ -2824,7 +2824,20 @@ public class ScriptExecutor {
             ScriptNode valueNode = (ScriptNode) instruction.getArg(2);
             Object value = evaluateExpression(valueNode);
 
+            Object varObj = getVariable(objectId);
+            if (varObj instanceof java.util.Map map) {
+                map.put(propName, value);
+                return;
+            }
+
             var entity = org.zonarstudio.spraute_engine.entity.NpcManager.getEntity(objectId, source.getLevel());
+            if (entity == null && varObj instanceof net.minecraft.world.entity.Entity e) {
+                entity = e;
+            }
+            if (entity == null && varObj instanceof String strId) {
+                entity = org.zonarstudio.spraute_engine.entity.NpcManager.getEntity(strId, source.getLevel());
+            }
+
             if (entity != null) {
                 switch (propName) {
                     case "name" -> entity.setCustomName(Component.literal(String.valueOf(value)));
@@ -2897,6 +2910,11 @@ public class ScriptExecutor {
                         }
                     }
                 }
+                return;
+            }
+
+            if (varObj != null) {
+                org.zonarstudio.spraute_engine.script.util.ForgeReflection.setField(varObj, propName, value);
             }
         }
 
@@ -3028,14 +3046,33 @@ public class ScriptExecutor {
                 boolean showName = !props.containsKey("showName") || Boolean.TRUE.equals(props.get("showName").get(0));
                 boolean collision = !props.containsKey("collision") || Boolean.TRUE.equals(props.get("collision").get(0)) || "true".equalsIgnoreCase(String.valueOf(props.get("collision").get(0)));
                 
-                List<Object> pos = props.get("pos");
-                int x = pos != null ? ((Number) pos.get(0)).intValue() : 0;
-                int y = pos != null ? ((Number) pos.get(1)).intValue() : 64;
-                int z = pos != null ? ((Number) pos.get(2)).intValue() : 0;
+                List<Object> posArgs = props.get("pos");
+                double x = 0, y = 64, z = 0;
+                if (posArgs != null && !posArgs.isEmpty()) {
+                    Object first = posArgs.get(0);
+                    if (first instanceof java.util.List<?> l && l.size() >= 3) {
+                        x = ((Number) l.get(0)).doubleValue();
+                        y = ((Number) l.get(1)).doubleValue();
+                        z = ((Number) l.get(2)).doubleValue();
+                    } else if (posArgs.size() >= 3) {
+                        x = ((Number) posArgs.get(0)).doubleValue();
+                        y = ((Number) posArgs.get(1)).doubleValue();
+                        z = ((Number) posArgs.get(2)).doubleValue();
+                    }
+                }
 
-                List<Object> rot = props.get("rotate");
-                int yaw = rot != null ? ((Number) rot.get(0)).intValue() : 0;
-                int pitch = rot != null ? ((Number) rot.get(1)).intValue() : 0;
+                List<Object> rotArgs = props.get("rotate");
+                float yaw = 0, pitch = 0;
+                if (rotArgs != null && !rotArgs.isEmpty()) {
+                    Object first = rotArgs.get(0);
+                    if (first instanceof java.util.List<?> l && l.size() >= 2) {
+                        yaw = ((Number) l.get(0)).floatValue();
+                        pitch = ((Number) l.get(1)).floatValue();
+                    } else if (rotArgs.size() >= 2) {
+                        yaw = ((Number) rotArgs.get(0)).floatValue();
+                        pitch = ((Number) rotArgs.get(1)).floatValue();
+                    }
+                }
 
                 net.minecraft.server.level.ServerLevel level = source.getLevel();
                 if (level != null) {
@@ -3054,7 +3091,7 @@ public class ScriptExecutor {
                         npc.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(hp);
                         npc.setHealth(hp);
                         npc.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED).setBaseValue(speed);
-                        npc.moveTo(x + 0.5, y, z + 0.5, yaw, pitch);
+                        npc.moveTo(x, y, z, yaw, pitch);
                         npc.setYRot(yaw);
                         npc.setYBodyRot(yaw);
                         npc.setYHeadRot(yaw);
@@ -3204,6 +3241,11 @@ public class ScriptExecutor {
                         case "texture" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.getTexture() : "";
                         default -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.customData.get(prop.getPropertyName()) : null;
                     };
+                }
+                
+                if (obj != null) {
+                    Object reflectionResult = org.zonarstudio.spraute_engine.script.util.ForgeReflection.getField(obj, prop.getPropertyName());
+                    if (reflectionResult != null) return reflectionResult;
                 }
                 
                 if (obj == null) {
@@ -3377,6 +3419,45 @@ public class ScriptExecutor {
                         default -> null;
                     };
                 }
+                
+                if (obj instanceof String str) {
+                    return switch (method) {
+                        case "toInt" -> { try { yield Integer.parseInt(str); } catch(Exception e){ yield null; } }
+                        case "toDouble" -> { try { yield Double.parseDouble(str); } catch(Exception e){ yield null; } }
+                        case "toString" -> str;
+                        case "length" -> str.length();
+                        case "split" -> {
+                            String regex = methodArgs.isEmpty() ? " " : String.valueOf(methodArgs.get(0));
+                            yield new ArrayList<>(java.util.Arrays.asList(str.split(regex)));
+                        }
+                        case "contains" -> {
+                            String seq = methodArgs.isEmpty() ? "" : String.valueOf(methodArgs.get(0));
+                            yield str.contains(seq);
+                        }
+                        case "replace" -> {
+                            String target = methodArgs.isEmpty() ? "" : String.valueOf(methodArgs.get(0));
+                            String replacement = methodArgs.size() > 1 ? String.valueOf(methodArgs.get(1)) : "";
+                            yield str.replace(target, replacement);
+                        }
+                        default -> org.zonarstudio.spraute_engine.script.util.ForgeReflection.invokeMethod(obj, method, methodArgs);
+                    };
+                }
+
+                if (obj instanceof Number num) {
+                    return switch (method) {
+                        case "toInt" -> num.intValue();
+                        case "toDouble" -> num.doubleValue();
+                        case "toString" -> num.toString();
+                        default -> org.zonarstudio.spraute_engine.script.util.ForgeReflection.invokeMethod(obj, method, methodArgs);
+                    };
+                }
+
+                // Fallback to Reflection
+                if (obj != null) {
+                    Object reflectionResult = org.zonarstudio.spraute_engine.script.util.ForgeReflection.invokeMethod(obj, method, methodArgs);
+                    if (reflectionResult != null) return reflectionResult;
+                }
+
                 return null;
             }
             if (node instanceof ScriptNode.UnaryNotNode unaryNot) {

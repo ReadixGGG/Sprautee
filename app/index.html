@@ -137,11 +137,28 @@
                 <span>Автодополнение</span>
                 <kbd class="text-xs font-mono bg-background px-1.5 py-0.5 rounded border border-white/10">Ctrl+Space</kbd>
               </button>
+              
+              <div class="px-3 py-2 text-xs font-bold text-on-variant uppercase tracking-wider border-b border-white/5 mb-1 mt-2">Расширения</div>
+              <button id="menu-plugins" class="w-full px-4 py-2 flex items-center justify-between text-sm text-on-surface hover:text-white hover:bg-primary/20 transition-colors">
+                <span>Плагины</span>
+                <span class="material-symbols-outlined text-[16px]">extension</span>
+              </button>
             </div>
           </div>
           
           <div class="h-4 w-px bg-white/10 mx-2"></div>
           <span id="studio-path-display" class="font-mono text-xs text-on-variant"></span>
+          
+          <div class="ml-auto flex items-center gap-2">
+            <button id="btn-import-script" class="hidden px-3 py-1.5 rounded-lg bg-surface-low border border-white/10 text-xs font-medium text-on-surface hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2" title="Импортировать скрипт для блоков">
+              <span class="material-symbols-outlined text-[16px]">download</span>
+              Импорт
+            </button>
+            <button id="btn-toggle-visual" class="hidden px-3 py-1.5 rounded-lg bg-surface-low border border-white/10 text-xs font-medium text-on-surface hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px]">extension</span>
+              Визуальный код
+            </button>
+          </div>
         </div>
       </header>
 
@@ -152,7 +169,7 @@
             <div class="absolute left-[-16px] top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full"></div>
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">description</span>
           </button>
-          <button class="w-10 h-10 rounded-xl flex items-center justify-center text-on-variant hover:text-white hover:bg-white/5 transition-colors" title="Поиск">
+          <button id="btn-open-global-search" class="w-10 h-10 rounded-xl flex items-center justify-center text-on-variant hover:text-white hover:bg-white/5 transition-colors" title="Поиск">
             <span class="material-symbols-outlined">search</span>
           </button>
           <div class="flex-1"></div>
@@ -191,6 +208,7 @@
             <p id="i18n-empty" class="mt-4 font-headline text-lg text-on-variant/50">Выберите файл для редактирования</p>
           </div>
           <div id="editor-mount" class="flex-1 relative z-20 w-full h-full"></div>
+          <div id="blockly-mount" class="flex-1 relative z-20 w-full h-full hidden overflow-hidden"></div>
         </section>
       </div>
       
@@ -227,7 +245,7 @@
   </div>
 
   <!-- Модальное окно (Prompt / Confirm) -->
-  <div id="app-modal" class="hidden fixed inset-0 z-[100] bg-background/80 flex items-center justify-center">
+  <div id="app-modal" class="hidden fixed inset-0 z-[999] bg-background/80 flex items-center justify-center">
     <div class="bg-surface-container border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm w-full space-y-4 transform scale-95 opacity-0 transition-all duration-200" id="app-modal-box">
       <h3 id="modal-title" class="font-headline font-bold text-white text-lg">Вопрос</h3>
       <div id="modal-input-container" class="space-y-2">
@@ -236,6 +254,29 @@
       <div class="flex justify-end gap-2 pt-2">
         <button id="modal-btn-cancel" class="px-4 py-2 rounded-lg text-on-variant hover:bg-white/5 hover:text-white transition-colors text-sm font-medium">Отмена</button>
         <button id="modal-btn-ok" class="px-4 py-2 rounded-lg bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-medium font-bold">ОК</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно Глобального поиска -->
+  <div id="global-search-modal" class="hidden fixed inset-0 z-[100] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full h-[80vh] flex flex-col transform scale-95 opacity-0 transition-all duration-200" id="global-search-modal-box">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
+        <h2 class="font-headline font-bold text-xl text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">search</span>Поиск по проекту
+        </h2>
+        <button id="btn-close-global-search" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="px-6 py-4 shrink-0 border-b border-white/5 relative">
+        <span class="material-symbols-outlined absolute left-9 top-1/2 -translate-y-1/2 text-on-variant">search</span>
+        <input type="text" id="global-search-input" placeholder="Искать названия файлов и код (Enter)..." class="w-full bg-black/20 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:outline-none focus:border-primary transition-colors" />
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-1 font-body text-sm relative">
+        <div id="global-search-results" class="flex flex-col gap-1">
+          <div class="text-center text-on-variant py-8 text-sm">Введите текст для поиска...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -486,6 +527,345 @@
     </div>
   </div>
 
+  <!-- Модальное окно Плагинов -->
+  <div id="plugins-modal" class="hidden fixed inset-0 z-[100] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full h-[85vh] flex flex-col transform scale-95 opacity-0 transition-all duration-200" id="plugins-modal-box">
+      <div class="px-6 py-4 border-b border-white/5 shrink-0 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-headline font-bold text-xl text-white">Управление плагинами</h2>
+          <button id="btn-close-plugins" class="text-on-variant hover:text-white transition-colors">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="flex gap-6 border-b border-white/5">
+          <button id="tab-my-plugins" class="px-2 py-2 border-b-2 border-primary text-white text-sm font-medium transition-colors">Мои плагины</button>
+          <button id="tab-market-plugins" class="px-2 py-2 border-b-2 border-transparent text-on-variant hover:text-white transition-colors text-sm font-medium">Магазин</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 font-body text-sm relative" id="plugins-modal-content">
+        <div class="flex items-center justify-between" id="plugins-header-actions">
+          <p class="text-on-variant" id="plugins-header-text">Здесь вы можете управлять пользовательскими библиотеками блоков и расширениями.</p>
+          <div class="flex items-center gap-3" id="plugins-header-buttons">
+            <button id="btn-load-plugin" class="px-4 py-2 rounded-lg bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors text-sm font-medium font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px]">upload</span>Загрузить плагин
+            </button>
+            <button id="btn-create-plugin" class="px-4 py-2 rounded-lg bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-medium font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px]">add</span>Создать плагин
+            </button>
+          </div>
+        </div>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-variant">search</span>
+          <input type="text" id="plugins-search" placeholder="Поиск плагинов..." class="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary transition-colors" />
+        </div>
+        <div class="h-px w-full bg-white/5"></div>
+        <div id="plugins-list" class="space-y-3 min-h-[300px]">
+          <!-- Список плагинов будет генерироваться здесь -->
+          <div class="text-center text-on-variant py-8 text-xs">Загрузка...</div>
+        </div>
+        <div id="plugins-pagination" class="flex items-center justify-center gap-2 mt-4">
+           <!-- Пагинация -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно Создания плагина -->
+  <div id="plugin-create-modal" class="hidden fixed inset-0 z-[110] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 transform scale-95 opacity-0 transition-all duration-200" id="plugin-create-modal-box">
+      <div class="flex items-center justify-between border-b border-white/5 pb-3">
+        <h3 class="font-headline font-bold text-white text-lg">Создать новый плагин</h3>
+        <button id="btn-close-plugin-create" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-on-variant mb-1 block">Название плагина <span class="text-red-400">*</span></label>
+          <input type="text" id="plugin-create-name" placeholder="Например: MyEpicCombat" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors" />
+        </div>
+        <div>
+          <label class="text-xs text-on-variant mb-1 block">Автор</label>
+          <input type="text" id="plugin-create-author" placeholder="Ваш никнейм" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors" />
+        </div>
+        <div>
+          <label class="text-xs text-on-variant mb-1 block">Версия Minecraft</label>
+          <select id="plugin-create-mcversion" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors">
+            <option value="1.19.2">1.19.2</option>
+            <option value="1.20.1">1.20.1</option>
+            <option value="any">Любая</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-on-variant mb-1 block">Описание</label>
+          <textarea id="plugin-create-desc" placeholder="Краткое описание того, что делает плагин..." rows="3" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button id="btn-plugin-create-cancel" class="flex-1 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors text-sm font-medium">Отмена</button>
+        <button id="btn-plugin-create-confirm" class="flex-1 px-4 py-2 rounded-lg bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-medium font-bold">Создать</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно Настроек плагина -->
+  <div id="plugin-settings-modal" class="hidden fixed inset-0 z-[110] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 transform scale-95 opacity-0 transition-all duration-200" id="plugin-settings-modal-box">
+      <div class="flex items-center justify-between border-b border-white/5 pb-3">
+        <h3 class="font-headline font-bold text-white text-lg">Настройки плагина</h3>
+        <button id="btn-close-plugin-settings" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="flex gap-4">
+        <!-- Левая колонка с иконкой -->
+        <div class="w-24 shrink-0 flex flex-col items-center gap-2">
+          <label class="text-xs text-on-variant block w-full text-center">Иконка</label>
+          <button id="btn-plugin-settings-icon" class="w-24 h-24 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/50 bg-black/20 flex flex-col items-center justify-center transition-colors relative overflow-hidden group">
+            <div id="plugin-settings-icon-placeholder" class="text-on-variant group-hover:text-primary transition-colors flex flex-col items-center">
+              <span class="material-symbols-outlined text-[32px]">image</span>
+              <span class="text-[10px] mt-1">Загрузить</span>
+            </div>
+            <img id="plugin-settings-icon-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden" />
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <span class="material-symbols-outlined text-white text-[24px]">edit</span>
+            </div>
+          </button>
+          <input type="file" id="plugin-settings-icon-file" accept="image/png, image/jpeg" class="hidden" />
+          <span class="text-[9px] text-on-variant/50 text-center leading-tight">PNG/JPG<br/>до 512x512</span>
+        </div>
+
+        <!-- Правая колонка с полями -->
+        <div class="flex-1 space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-on-variant mb-1 block">Название (ID)</label>
+              <input type="text" id="plugin-settings-name" class="w-full bg-black/20 border border-white/5 rounded-lg px-3 py-1.5 text-sm text-white/50 focus:outline-none cursor-not-allowed" disabled />
+            </div>
+            <div>
+              <label class="text-xs text-on-variant mb-1 block">Автор</label>
+              <input type="text" id="plugin-settings-author" placeholder="Имя автора" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary transition-colors" />
+            </div>
+          </div>
+          
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">Версия Minecraft</label>
+            <input type="text" id="plugin-settings-mcversion" placeholder="1.20.1" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary transition-colors" />
+          </div>
+          
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">Описание</label>
+            <textarea id="plugin-settings-desc" placeholder="Краткое описание плагина" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none"></textarea>
+          </div>
+
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">Глобальный импорт скриптов</label>
+            <p class="text-[9px] text-on-variant/70 mb-1 leading-tight">Эти строки будут автоматически добавляться в начало каждого визуального скрипта (например, <code class="bg-black/30 px-1 rounded text-primary">import "plugins/my_plugin/main"</code>)</p>
+            <textarea id="plugin-settings-global-scripts" placeholder='import "plugins/вашлагин/..."' rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none font-mono"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2 items-center justify-between border-t border-white/5 mt-2">
+        <div class="flex gap-2">
+          <button id="btn-plugin-settings-export" class="px-4 py-2 rounded-lg bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors text-sm font-medium flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">download</span>Экспорт (.splugin)
+          </button>
+          <button id="btn-plugin-settings-delete" class="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors text-sm font-medium flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">delete</span>Удалить
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-plugin-settings-cancel" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors text-sm font-medium">Отмена</button>
+          <button id="btn-plugin-settings-save" class="px-4 py-2 rounded-lg bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-medium font-bold">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно списка блоков плагина -->
+  <div id="plugin-blocks-modal" class="hidden fixed inset-0 z-[120] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full h-[85vh] flex flex-col transform scale-95 opacity-0 transition-all duration-200" id="plugin-blocks-modal-box">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-headline font-bold text-xl text-white flex items-center gap-2">
+            Блоки плагина <span id="plugin-blocks-title" class="text-primary text-sm bg-primary/10 px-2 py-0.5 rounded">Plugin</span>
+          </h2>
+        </div>
+        <button id="btn-close-plugin-blocks" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 font-body text-sm relative">
+        <div class="flex items-center justify-between">
+          <p class="text-on-variant">Визуальные блоки, предоставляемые этим плагином.</p>
+          <div class="flex items-center gap-2">
+            <button id="btn-manage-categories" class="px-4 py-2 rounded-lg bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors text-sm font-medium flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px]">folder</span>Категории
+            </button>
+            <button id="btn-create-block" class="px-4 py-2 rounded-lg bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-medium font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px]">add</span>Создать блок
+            </button>
+          </div>
+        </div>
+        <div class="h-px w-full bg-white/5"></div>
+        <div id="plugin-blocks-list" class="space-y-3">
+          <!-- Список блоков -->
+          <div class="text-center text-on-variant py-8 text-xs">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно управления категориями -->
+  <div id="categories-modal" class="hidden fixed inset-0 z-[125] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 transform scale-95 opacity-0 transition-all duration-200" id="categories-modal-box">
+      <div class="flex items-center justify-between border-b border-white/5 pb-3">
+        <h3 class="font-headline font-bold text-white text-lg">Категории блоков</h3>
+        <button id="btn-close-categories" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div id="categories-list" class="space-y-2 max-h-60 overflow-y-auto">
+        <!-- Список категорий -->
+      </div>
+      
+      <div class="h-px bg-white/10"></div>
+      
+      <div class="space-y-2">
+        <label class="text-xs text-on-variant">Добавить категорию:</label>
+        <div class="flex gap-2">
+          <input type="text" id="new-category-name" placeholder="Название" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" />
+          <input type="color" id="new-category-color" value="#38bdf8" class="w-10 h-10 rounded border-none bg-transparent cursor-pointer" />
+          <button id="btn-add-category" class="px-4 py-2 rounded-lg bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-bold">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Конструктор блока (Block Builder) -->
+  <div id="block-builder-modal" class="hidden fixed inset-0 z-[130] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-5xl w-full h-[90vh] flex flex-col transform scale-95 opacity-0 transition-all duration-200" id="block-builder-modal-box">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between shrink-0 bg-surface-low">
+        <h2 class="font-headline font-bold text-xl text-white">Конструктор визуального блока</h2>
+        <button id="btn-close-block-builder" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto p-6 flex gap-6 font-body text-sm bg-background">
+        
+        <!-- Левая колонка: Основные настройки -->
+        <div class="w-1/3 space-y-4 shrink-0">
+          <h3 class="font-headline font-semibold text-primary uppercase tracking-widest text-[11px]">Метаданные</h3>
+          
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">ID Блока <span class="text-red-400">*</span> <span class="text-on-variant/50">(только a–z, 0–9, _)</span></label>
+            <div class="flex items-center gap-2">
+              <span id="builder-id-namespace" class="text-on-variant font-mono text-xs opacity-60"></span>
+              <input type="text" id="builder-id" placeholder="my_block" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary font-mono" pattern="[a-z0-9_]+" />
+            </div>
+            <p id="builder-id-error" class="text-red-400 text-[10px] mt-1 hidden">Только маленькие латинские буквы, цифры и нижнее подчёркивание</p>
+          </div>
+          
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">Категория</label>
+            <select id="builder-category" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+              <option value="Мои блоки">Мои блоки</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">Форма блока (Shape)</label>
+            <select id="builder-shape" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+              <option value="statement">Обычная команда (Statement)</option>
+              <option value="value">Значение (Овал)</option>
+              <option value="wrapper">Вложение (C-блок, if/else)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs text-on-variant mb-1 block">Цвет блока (HEX)</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="builder-color-picker" value="#38bdf8" class="w-8 h-8 rounded border-none bg-transparent cursor-pointer" />
+              <input type="text" id="builder-color" value="#38bdf8" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <div class="w-px bg-white/5"></div>
+
+        <!-- Правая колонка: UI и Код -->
+        <div class="flex-1 flex flex-col gap-6">
+          <div class="flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-headline font-semibold text-secondary uppercase tracking-widest text-[11px]">Синтаксис и логика блока</h3>
+              <button id="btn-builder-docs" class="text-[10px] text-primary hover:underline bg-transparent border-none p-0 cursor-pointer">Документация по синтаксису</button>
+            </div>
+            <textarea id="builder-ui" placeholder="row: &quot;Поздороваться с&quot; [npc: dropdown_npc]&#10;if mode == &quot;pos&quot;:&#10;  row: &quot;на координатах x&quot; (x: number: 0)&#10;  template: {npc}.look(false)" class="w-full flex-1 bg-[#0b1a2f] border border-white/10 rounded-lg p-3 text-sm text-[#e2e8f0] focus:outline-none focus:border-secondary font-mono resize-none leading-relaxed"></textarea>
+          </div>
+
+          <div class="h-40 flex flex-col shrink-0">
+             <h3 class="font-headline font-semibold text-tertiary uppercase tracking-widest text-[11px] mb-2 flex items-center justify-between">Предпросмотр <button id="btn-builder-preview" class="px-2 py-1 rounded bg-white/10 text-white hover:bg-white/20 transition text-[10px]">Обновить</button></h3>
+             <div id="blockly-preview-mount" class="w-full flex-1 border border-white/10 rounded-lg bg-surface relative overflow-hidden pointer-events-none"></div>
+          </div>
+
+          <div class="hidden flex-1 flex flex-col">
+             <h3 class="font-headline font-semibold text-tertiary uppercase tracking-widest text-[11px] mb-2">Генерация кода (JS)</h3>
+             <textarea id="builder-code" placeholder="return `${npc}.say(&quot;Привет!&quot;);\n`;" class="w-full flex-1 bg-[#0b1a2f] border border-white/10 rounded-lg p-3 text-sm text-[#d1ff9f] focus:outline-none focus:border-tertiary font-mono resize-none leading-relaxed"></textarea>
+          </div>
+
+          <div class="hidden flex-1 flex flex-col">
+             <h3 class="font-headline font-semibold text-secondary uppercase tracking-widest text-[11px] mb-2">Парсинг из кода в блок (Простой синтаксис)</h3>
+             <textarea id="builder-parse" placeholder='"`{npc}`.action(`{target_type}`);"' class="w-full flex-1 bg-[#0b1a2f] border border-white/10 rounded-lg p-3 text-[12px] text-[#e2e8f0] focus:outline-none focus:border-secondary font-mono resize-none leading-relaxed"></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <div class="px-6 py-4 border-t border-white/5 flex items-center justify-end gap-3 shrink-0 bg-surface-low">
+        <button id="btn-builder-cancel" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors text-sm font-medium">Отмена</button>
+        <button id="btn-builder-save" class="px-5 py-2.5 rounded-xl bg-primary text-background hover:bg-primary/90 transition-colors text-sm font-bold shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">save</span> Сохранить блок
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно Документации по синтаксису -->
+  <div id="builder-docs-modal" class="hidden fixed inset-0 z-[130] bg-background/90 flex items-center justify-center">
+    <div class="bg-surface-container border border-white/10 rounded-2xl shadow-2xl max-w-4xl w-full h-[85vh] flex flex-col transform scale-95 opacity-0 transition-all duration-200" id="builder-docs-modal-box">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
+        <h2 class="font-headline font-bold text-xl text-white flex items-center gap-2">
+          Документация: Синтаксис и логика визуальных блоков
+        </h2>
+        <button id="btn-close-builder-docs" class="text-on-variant hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 font-body text-sm text-on-variant markdown-content" id="builder-docs-content">
+        <div class="text-center py-8">Загрузка документации...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('error', function(e) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = "position:fixed; z-index:99999; top:0; left:0; right:0; background:rgba(255,0,0,0.9); color:white; padding:20px; font-family:monospace; word-wrap:break-word; max-height: 50vh; overflow: auto;";
+      errDiv.innerText = "CRITICAL BOOT ERROR:\n" + e.message + "\n\nFile: " + e.filename + ":" + e.lineno;
+      document.body.appendChild(errDiv);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = "position:fixed; z-index:99999; top:50vh; left:0; right:0; background:rgba(200,0,0,0.9); color:white; padding:20px; font-family:monospace; word-wrap:break-word; max-height: 50vh; overflow: auto;";
+      errDiv.innerText = "UNHANDLED PROMISE REJECTION:\n" + (e.reason && e.reason.stack ? e.reason.stack : e.reason);
+      document.body.appendChild(errDiv);
+    });
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -685,10 +685,10 @@ public class ScriptParser {
 
     /** Property names valid inside widget { } blocks (anything else with `name = expr` is a variable assignment). */
     private static final Set<String> WIDGET_PROPERTY_NAMES = Set.of(
-            "pos", "size", "color", "scale", "wrap", "align", "layer",
+            "pos", "size", "w", "h", "color", "scale", "wrap", "align", "layer",
             "contentH", "scrollbar", "autoScrollbar", "hover", "texture", "id",
-            "feetCrop", "crop", "anchor", "anchorX", "anchorY", "viewport", "tooltip", "block",
-            "labelWrap", "labelScale", "subLabel", "subScale"
+            "feetCrop", "crop", "anchor", "anchorX", "anchorY", "viewport", "tooltip", "block", "item",
+            "labelWrap", "labelScale", "subLabel", "subScale", "bgColor", "outlineColor", "maxLines", "maxChars", "inputType", "placeholder", "gridType", "cellSize", "thickness"
     );
 
     private static boolean isWidgetPropertyName(String name) {

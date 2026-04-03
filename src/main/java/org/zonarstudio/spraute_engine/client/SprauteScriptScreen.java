@@ -709,7 +709,7 @@ public class SprauteScriptScreen extends Screen {
                 String itemId = "minecraft:stone";
                 if (w.has("item")) itemId = w.get("item").getAsString();
                 else if (w.has("block")) itemId = w.get("block").getAsString();
-                int itemSize = w.has("size") ? w.get("size").getAsInt() : (ww > 0 ? ww : 16);
+                int itemSize = w.has("size") ? w.get("size").getAsInt() : (w.has("w") ? w.get("w").getAsInt() : (ww > 0 ? ww : 16));
                 yield new ItemW(x, y, itemSize, itemId, tooltip, wid);
             }
             default -> null;
@@ -1419,7 +1419,11 @@ public class SprauteScriptScreen extends Screen {
                     item = block.asItem();
                 }
             }
-            if (item == null || item == net.minecraft.world.item.Items.AIR) return;
+            if (item == null || item == net.minecraft.world.item.Items.AIR) {
+                System.out.println("ItemW render failed: AIR or null for itemId " + itemId);
+                return;
+            }
+            System.out.println("ItemW rendering " + itemId + " at " + x + ", " + y + " size " + size);
             ItemStack stack = new ItemStack(item);
 
             Minecraft mc = Minecraft.getInstance();

@@ -14,7 +14,7 @@ public class ModEntities {
 
     public static final RegistryObject<EntityType<SprauteNpcEntity>> SPRAUTE_NPC =
             ENTITIES.register("spraute_npc",
-                    () -> EntityType.Builder.of(SprauteNpcEntity::new, MobCategory.MISC)
+                    () -> EntityType.Builder.<SprauteNpcEntity>of((type, level) -> new SprauteNpcEntity(type, level), MobCategory.MISC)
                             .sized(0.6f, 1.8f)
                             .build("spraute_npc"));
 

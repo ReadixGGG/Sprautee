@@ -205,6 +205,109 @@ ipcMain.handle('fs:write', async (_e, relPath, content) => {
   await fs.writeFile(file, content, 'utf8');
 });
 
+ipcMain.handle('fs:writeBase64', async (_e, relPath, base64) => {
+  const root = getWorkspaceRoot();
+  const file = safeJoin(root, relPath);
+  const buffer = Buffer.from(base64, 'base64');
+  await fs.writeFile(file, buffer);
+});
+
+// Добавим экспорт плагина (создание ZIP)
+ipcMain.handle('plugin:export', async (event, pluginName) => {
+  try {
+    const AdmZip = require('adm-zip');
+    const root = getWorkspaceRoot();
+    const pluginPath = safeJoin(root, 'plugins', pluginName);
+    
+    // Проверяем, существует ли папка плагина
+    try {
+      await fs.access(pluginPath);
+    } catch {
+      return { success: false, error: 'Папка плагина не найдена' };
+    }
+
+    const { dialog } = require('electron');
+    const { filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Экспорт плагина',
+      defaultPath: `${pluginName}.splugin`,
+      filters: [{ name: 'Spraute Plugin', extensions: ['splugin'] }, { name: 'ZIP Архивы', extensions: ['zip'] }]
+    });
+
+    if (!filePath) return { success: false, error: 'Отменено пользователем' };
+
+    const zip = new AdmZip();
+    zip.addLocalFolder(pluginPath); // Внутри архива не нужна дополнительная папка, чтобы извлекать напрямую
+    zip.writeZip(filePath);
+
+    return { success: true, path: filePath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('plugin:import', async (event, base64Data, filename) => {
+  try {
+    const AdmZip = require('adm-zip');
+    const root = getWorkspaceRoot();
+    
+    // Создаем временный файл
+    const tempZipPath = safeJoin(root, 'plugins', `_temp_${Date.now()}.zip`);
+    const buffer = Buffer.from(base64Data, 'base64');
+    await fs.writeFile(tempZipPath, buffer);
+
+    const zip = new AdmZip(tempZipPath);
+    
+    // Пытаемся получить имя плагина из plugin.json внутри архива
+    let pluginName = filename.replace('.splugin', '').replace('.zip', '');
+    const zipEntries = zip.getEntries();
+    
+    // Проверим, есть ли внутри папка с именем плагина или файлы лежат в корне
+    let hasRootPluginJson = false;
+    let rootFolder = null;
+    
+    for (const entry of zipEntries) {
+      if (entry.entryName === 'plugin.json') hasRootPluginJson = true;
+      if (entry.isDirectory && entry.entryName.split('/').length === 2 && entry.entryName.includes('/')) {
+         // Возможно, плагин запакован в папку
+         if (!rootFolder) rootFolder = entry.entryName.split('/')[0];
+      }
+    }
+
+    if (hasRootPluginJson) {
+      // Файлы лежат в корне архива. Читаем plugin.json чтобы узнать имя
+      const jsonEntry = zip.getEntry('plugin.json');
+      if (jsonEntry) {
+        const jsonStr = jsonEntry.getData().toString('utf8');
+        try {
+          const data = JSON.parse(jsonStr);
+          if (data.name) pluginName = data.name;
+        } catch(e) {}
+      }
+      
+      const destPath = safeJoin(root, 'plugins', pluginName);
+      await fs.mkdir(destPath, { recursive: true });
+      zip.extractAllTo(destPath, true);
+    } else if (rootFolder) {
+       // Плагин запакован в папку
+       pluginName = rootFolder;
+       const destPath = safeJoin(root, 'plugins'); // Распаковываем прямо в plugins, папка создастся сама
+       zip.extractAllTo(destPath, true);
+    } else {
+       // Фолбэк, просто распакуем в папку с именем файла
+       const destPath = safeJoin(root, 'plugins', pluginName);
+       await fs.mkdir(destPath, { recursive: true });
+       zip.extractAllTo(destPath, true);
+    }
+
+    // Удаляем временный файл
+    await fs.unlink(tempZipPath);
+
+    return { success: true, name: pluginName };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 ipcMain.handle('fs:mkdir', async (_e, relPath) => {
   const root = getWorkspaceRoot();
   const dir = safeJoin(root, relPath);
@@ -248,10 +351,67 @@ ipcMain.handle('fs:copy', async (_e, srcRel, destRel) => {
   await fs.cp(srcPath, destPath, { recursive: true });
 });
 
+ipcMain.handle('fs:search', async (_e, query) => {
+  const root = getWorkspaceRoot();
+  const results = [];
+  query = query.toLowerCase();
+
+  const textExts = ['.spr', '.json', '.js', '.txt', '.md', '.html', '.splugin'];
+
+  async function walk(dir) {
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      const relPath = path.relative(root, fullPath).replace(/\\/g, '/');
+      
+      // Игнорируем ненужные папки
+      if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'build' || entry.name === 'dist') continue;
+
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        
+        // 1. Поиск по имени файла
+        if (entry.name.toLowerCase().includes(query)) {
+          results.push({ file: relPath, type: 'file', match: entry.name });
+        }
+        
+        // 2. Поиск внутри текстовых файлов
+        if (textExts.includes(ext)) {
+          try {
+            const content = await fs.readFile(fullPath, 'utf8');
+            const lines = content.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].toLowerCase().includes(query)) {
+                results.push({ 
+                  file: relPath, 
+                  type: 'content', 
+                  line: i + 1, 
+                  match: lines[i].trim() 
+                });
+              }
+            }
+          } catch(e) {
+            // Игнорируем ошибки чтения
+          }
+        }
+      }
+    }
+  }
+
+  await walk(root);
+  return results;
+});
+
 ipcMain.handle('app:show-in-explorer', async (_e, relPath) => {
   const root = getWorkspaceRoot();
   const file = safeJoin(root, relPath);
   shell.showItemInFolder(file);
+});
+
+ipcMain.handle('app:open-external', async (_e, url) => {
+  shell.openExternal(url);
 });
 
 // Система обновлений и инициализации
@@ -386,6 +546,65 @@ ipcMain.handle('mod-update:download', async (event, serverVersion) => {
     } else {
       return { success: false, error: 'Файл мода не найден на сервере (404)' };
     }
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('plugin:market-list', async () => {
+  try {
+    const res = await fetch(`http://85.239.59.203/plugins/market.json`);
+    if (res.ok) {
+      return await res.json();
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+});
+
+ipcMain.handle('plugin:market-download', async (event, pluginName, fileName) => {
+  try {
+    const root = getWorkspaceRoot();
+    const pluginsDir = safeJoin(root, 'plugins');
+    const AdmZip = require('adm-zip');
+    
+    const res = await fetch(`http://85.239.59.203/plugins/${fileName}`);
+    if (!res.ok) throw new Error('Файл плагина не найден на сервере');
+    
+    const buf = Buffer.from(await res.arrayBuffer());
+    const tempZip = safeJoin(pluginsDir, `_temp_${Date.now()}.zip`);
+    await fs.writeFile(tempZip, buf);
+    
+    const zip = new AdmZip(tempZip);
+    const destPath = safeJoin(pluginsDir, pluginName);
+    
+    await fs.rm(destPath, { recursive: true, force: true }).catch(() => {});
+    await fs.mkdir(destPath, { recursive: true });
+    
+    const entries = zip.getEntries();
+    let hasRootJson = false;
+    let rootFolder = null;
+    for (const e of entries) {
+       if (e.entryName === 'plugin.json') hasRootJson = true;
+       if (e.isDirectory && e.entryName.split('/').length === 2 && e.entryName.includes('/')) {
+         if (!rootFolder) rootFolder = e.entryName.split('/')[0];
+       }
+    }
+    
+    if (hasRootJson) {
+       zip.extractAllTo(destPath, true);
+    } else if (rootFolder) {
+       zip.extractAllTo(pluginsDir, true);
+       if (rootFolder !== pluginName) {
+           await fs.rename(safeJoin(pluginsDir, rootFolder), destPath);
+       }
+    } else {
+       zip.extractAllTo(destPath, true);
+    }
+    
+    await fs.unlink(tempZip).catch(()=>{});
+    return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
   }

@@ -8,12 +8,18 @@ contextBridge.exposeInMainWorld('spraute', {
   listDir: (relPath) => ipcRenderer.invoke('fs:list', relPath),
   readFile: (relPath, encoding) => ipcRenderer.invoke('fs:read', relPath, encoding),
   writeFile: (relPath, content) => ipcRenderer.invoke('fs:write', relPath, content),
+  writeBase64: (relPath, base64) => ipcRenderer.invoke('fs:writeBase64', relPath, base64),
+  exportPluginZip: (pluginName) => ipcRenderer.invoke('plugin:export', pluginName),
+  importPluginZip: (base64Data, filename) => ipcRenderer.invoke('plugin:import', base64Data, filename),
+  marketList: () => ipcRenderer.invoke('plugin:market-list'),
+  marketDownload: (pluginName, fileName) => ipcRenderer.invoke('plugin:market-download', pluginName, fileName),
   mkdir: (relPath) => ipcRenderer.invoke('fs:mkdir', relPath),
   unlink: (relPath) => ipcRenderer.invoke('fs:unlink', relPath),
   rmdir: (relPath) => ipcRenderer.invoke('fs:rmdir', relPath),
   rename: (oldRelPath, newRelPath) => ipcRenderer.invoke('fs:rename', oldRelPath, newRelPath),
   exists: (relPath) => ipcRenderer.invoke('fs:exists', relPath),
   copy: (srcRel, destRel) => ipcRenderer.invoke('fs:copy', srcRel, destRel),
+  search: (query) => ipcRenderer.invoke('fs:search', query),
   showInExplorer: (relPath) => ipcRenderer.invoke('app:show-in-explorer', relPath),
   initWorkspace: (mcPath) => ipcRenderer.invoke('app:init-workspace', mcPath),
   onUpdateProgress: (callback) => {
@@ -41,5 +47,7 @@ contextBridge.exposeInMainWorld('spraute', {
   },
   downloadModUpdate: (version) => ipcRenderer.invoke('mod-update:download', version),
   
+  openExternal: (url) => ipcRenderer.invoke('app:open-external', url),
+
   setTitleBarColors: (color, symbolColor) => ipcRenderer.invoke('app:set-titlebar', color, symbolColor)
 });

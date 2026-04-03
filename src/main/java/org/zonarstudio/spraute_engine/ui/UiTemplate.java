@@ -387,6 +387,10 @@ public final class UiTemplate {
         String defaultBlock = "minecraft:stone";
         if (rw.evaluatedArgs.size() >= 2) {
             defaultBlock = String.valueOf(rw.evaluatedArgs.get(1));
+        } else if (rw.evaluatedArgs.size() == 1) {
+            if (!rw.evaluatedProps.containsKey("item") && !rw.evaluatedProps.containsKey("block")) {
+                defaultBlock = String.valueOf(rw.evaluatedArgs.get(0));
+            }
         }
         String blockId = propStr(rw.evaluatedProps, "block", propStr(rw.evaluatedProps, "item", defaultBlock));
 
@@ -394,7 +398,7 @@ public final class UiTemplate {
         o.addProperty("type", "block");
         o.addProperty("id", widId);
         putXY(o, rw.evaluatedProps, "pos", pw, ph);
-        int sz = propInt(rw.evaluatedProps, "size", 16);
+        int sz = propInt(rw.evaluatedProps, "size", propInt(rw.evaluatedProps, "w", 16));
         o.addProperty("w", sz);
         o.addProperty("block", blockId);
         o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
@@ -409,6 +413,10 @@ public final class UiTemplate {
         String defaultItem = "minecraft:stone";
         if (rw.evaluatedArgs.size() >= 2) {
             defaultItem = String.valueOf(rw.evaluatedArgs.get(1));
+        } else if (rw.evaluatedArgs.size() == 1) {
+            if (!rw.evaluatedProps.containsKey("item") && !rw.evaluatedProps.containsKey("block")) {
+                defaultItem = String.valueOf(rw.evaluatedArgs.get(0));
+            }
         }
         String itemId = propStr(rw.evaluatedProps, "item", propStr(rw.evaluatedProps, "block", defaultItem));
         
@@ -416,7 +424,7 @@ public final class UiTemplate {
         o.addProperty("type", "item");
         o.addProperty("id", widId);
         putXY(o, rw.evaluatedProps, "pos", pw, ph);
-        int sz = propInt(rw.evaluatedProps, "size", 16);
+        int sz = propInt(rw.evaluatedProps, "size", propInt(rw.evaluatedProps, "w", 16));
         o.addProperty("size", sz);
         o.addProperty("item", itemId);
         o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
