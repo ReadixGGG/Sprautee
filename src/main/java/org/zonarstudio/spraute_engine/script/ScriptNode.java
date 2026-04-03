@@ -3,12 +3,22 @@ package org.zonarstudio.spraute_engine.script;
 /**
  * Base interface for all AST nodes in the script language.
  */
-public interface ScriptNode {
+    public interface ScriptNode {
+        int getLine();
+        void setLine(int line);
+        int getColumn();
+        void setColumn(int col);
 
     /**
      * A generic function call node, e.g., chat("hello").
      */
     class FunctionCallNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String functionName;
         private final java.util.List<ScriptNode> args;
 
@@ -31,6 +41,12 @@ public interface ScriptNode {
      * scope: "local" | "global" | "world"
      */
     class VariableDeclarationNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String name;
         private final ScriptNode initializer;
         private final String scope;
@@ -54,6 +70,12 @@ public interface ScriptNode {
      * A binary expression: a + b
      */
     class BinaryExpressionNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode left;
         private final ScriptToken operator;
         private final ScriptNode right;
@@ -73,6 +95,12 @@ public interface ScriptNode {
      * A literal value (String or Number)
      */
     class LiteralNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final Object value;
         public LiteralNode(Object value) { this.value = value; }
         public Object getValue() { return value; }
@@ -82,6 +110,12 @@ public interface ScriptNode {
      * A variable or identifier reference
      */
     class IdentifierNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String name;
         public IdentifierNode(String name) { this.name = name; }
         public String getName() { return name; }
@@ -91,6 +125,12 @@ public interface ScriptNode {
      * An NPC block: npc_id { ... }
      */
     class NpcBlockNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String entityId;
         private final java.util.Map<String, java.util.List<ScriptNode>> properties;
 
@@ -107,6 +147,12 @@ public interface ScriptNode {
      * Set a property on an object: id.property = expression
      */
     class PropertyAssignmentNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String objectName;
         private final String propertyName;
         private final ScriptNode value;
@@ -126,6 +172,12 @@ public interface ScriptNode {
      * An await statement: await function_call
      */
     class AwaitNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode.FunctionCallNode call;
 
         public AwaitNode(ScriptNode.FunctionCallNode call) {
@@ -139,6 +191,12 @@ public interface ScriptNode {
      * A method call on an object: object.method(args)
      */
     class MethodCallNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String objectName;
         private final String methodName;
         private final java.util.List<ScriptNode> args;
@@ -158,6 +216,12 @@ public interface ScriptNode {
      * Access a property on an object: object.property
      */
     class PropertyAccessNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String objectName;
         private final String propertyName;
 
@@ -174,6 +238,12 @@ public interface ScriptNode {
      * A block of statements: { statement.. }
      */
     class BlockNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final java.util.List<ScriptNode> statements;
 
         public BlockNode(java.util.List<ScriptNode> statements) {
@@ -187,6 +257,12 @@ public interface ScriptNode {
      * A while loop: while (condition) body
      */
     class WhileNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode condition;
         private final ScriptNode body;
 
@@ -204,6 +280,12 @@ public interface ScriptNode {
      * branches: list of (condition, body) pairs. The last may have null condition for 'else'.
      */
     class IfNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final java.util.List<ScriptNode> conditions;
         private final java.util.List<ScriptNode> bodies;
 
@@ -220,6 +302,12 @@ public interface ScriptNode {
      * A unary expression: !expr
      */
     class UnaryNotNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode operand;
 
         public UnaryNotNode(ScriptNode operand) {
@@ -233,6 +321,12 @@ public interface ScriptNode {
      * Variable reassignment: name = expression
      */
     class VariableAssignmentNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String name;
         private final ScriptNode value;
 
@@ -249,6 +343,12 @@ public interface ScriptNode {
      * User-defined function: fun name(params) { body }
      */
     class FunctionDefNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String name;
         private final java.util.List<String> params;
         private final ScriptNode body;
@@ -268,6 +368,12 @@ public interface ScriptNode {
      * Return statement: return expression
      */
     class ReturnNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode value;
 
         public ReturnNode(ScriptNode value) {
@@ -282,6 +388,12 @@ public interface ScriptNode {
      * Runs the body every time the event fires, until stopped via stop(handler_id).
      */
     class OnNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String eventName;
         private final java.util.List<ScriptNode> eventArgs;
         private final String handlerId;
@@ -305,6 +417,12 @@ public interface ScriptNode {
      * Repeats body every N seconds until stopped via stop(handler_id).
      */
     class EveryNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode interval;
         private final String handlerId;
         private final ScriptNode body;
@@ -324,6 +442,12 @@ public interface ScriptNode {
      * Stop a running handler: stop(handler_id)
      */
     class StopNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String handlerId;
 
         public StopNode(String handlerId) {
@@ -338,6 +462,12 @@ public interface ScriptNode {
      * Runs body in background. Named tasks can be awaited or stopped.
      */
     class AsyncNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String taskId;  // null = anonymous
         private final ScriptNode body;
 
@@ -354,6 +484,12 @@ public interface ScriptNode {
      * A for loop: for (variable in iterable) body
      */
     class ForNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String variableName;
         private final ScriptNode iterable;
         private final ScriptNode body;
@@ -373,6 +509,12 @@ public interface ScriptNode {
      * List literal: [ expr, expr, ... ]
      */
     class ListLiteralNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final java.util.List<ScriptNode> elements;
 
         public ListLiteralNode(java.util.List<ScriptNode> elements) {
@@ -388,6 +530,12 @@ public interface ScriptNode {
      * create ui name { ... } — body may contain widget declarations, loops, conditions, etc.
      */
     class UiBlockNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String variableName;
         private final java.util.Map<String, ScriptNode> rootProps;
         private final java.util.List<ScriptNode> bodyStatements;
@@ -415,6 +563,12 @@ public interface ScriptNode {
      * Widget inside create ui: text(...) { pos = ... on_click { } }
      */
     class UiWidgetNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String kind;
         private final java.util.List<ScriptNode> args;
         private final java.util.Map<String, ScriptNode> props;
@@ -462,6 +616,12 @@ public interface ScriptNode {
     }
 
     class IncludeNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final String scriptName;
 
         public IncludeNode(String scriptName) {
@@ -477,6 +637,12 @@ public interface ScriptNode {
      * Array or map element access: object[index]
      */
     class IndexAccessNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode object;
         private final ScriptNode index;
 
@@ -493,6 +659,12 @@ public interface ScriptNode {
      * Array or map element assignment: object[index] = value
      */
     class IndexAssignmentNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
         private final ScriptNode object;
         private final ScriptNode index;
         private final ScriptNode value;
@@ -506,5 +678,31 @@ public interface ScriptNode {
         public ScriptNode getObject() { return object; }
         public ScriptNode getIndex() { return index; }
         public ScriptNode getValue() { return value; }
+    }
+
+    /**
+     * Try-catch block: try { ... } catch (var) { ... }
+     */
+    class TryCatchNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
+
+        private final ScriptNode tryBlock;
+        private final String catchVarName;
+        private final ScriptNode catchBlock;
+
+        public TryCatchNode(ScriptNode tryBlock, String catchVarName, ScriptNode catchBlock) {
+            this.tryBlock = tryBlock;
+            this.catchVarName = catchVarName;
+            this.catchBlock = catchBlock;
+        }
+
+        public ScriptNode getTryBlock() { return tryBlock; }
+        public String getCatchVarName() { return catchVarName; }
+        public ScriptNode getCatchBlock() { return catchBlock; }
     }
 }

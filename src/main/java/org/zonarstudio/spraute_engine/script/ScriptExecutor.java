@@ -175,6 +175,15 @@ public class ScriptExecutor {
     }
 
     // --- Internal: user-defined function storage ---
+    public static class TryBlock {
+        public final int catchIp;
+        public final String catchVar;
+        public TryBlock(int catchIp, String catchVar) {
+            this.catchIp = catchIp;
+            this.catchVar = catchVar;
+        }
+    }
+
     private static class UserFunction {
         final List<String> params;
         final List<CompiledScript.Instruction> bodyInstructions;
@@ -300,6 +309,7 @@ public class ScriptExecutor {
 
         /** Async tasks: id -> task. Named tasks can be awaited or stopped. */
         private final Map<String, AsyncTask> asyncTasks = new HashMap<>();
+        private final java.util.Stack<TryBlock> tryStack = new java.util.Stack<>();
         private String waitTaskId = null;
         /** {@link #onUiAction} */
         private UUID waitUiPlayerUuid = null;
@@ -852,18 +862,27 @@ public class ScriptExecutor {
             while (ip < script.getInstructions().size()) {
                 CompiledScript.Instruction instruction = script.getInstructions().get(ip);
                 try {
-                    boolean shouldPause = executeInstruction(instruction);
+                    boolean shouldPause = executeInstruction(instruction, tryStack, null);
                     ip++;
                     if (shouldPause) return;
                 } catch (Exception e) {
-                    LOGGER.error("[Script: {}] Runtime error at instruction {}: {} — {}",
-                            script.getName(), ip, instruction, e.getMessage());
-                    if (source != null) {
-                        source.sendFailure(Component.literal(
-                                "§c[Spraute] Script '" + script.getName() + "' error: " + e.getMessage()));
+                    if (!tryStack.isEmpty()) {
+                        TryBlock tb = tryStack.pop();
+                        ip = tb.catchIp;
+                        if (tb.catchVar != null) {
+                            variables.put(tb.catchVar, e.getMessage() != null ? e.getMessage() : e.toString());
+                        }
+                    } else {
+                        String errMsg = e.getMessage() != null ? e.getMessage() : e.toString();
+                        LOGGER.error("[Script: {}] Runtime error at line {}: {} - {}",
+                                script.getName(), instruction.getLine(), instruction.getOpcode(), errMsg);
+                        if (source != null) {
+                            source.sendFailure(Component.literal(
+                                    "§c[Spraute] Script '" + script.getName() + "' error at line " + instruction.getLine() + ": " + errMsg));
+                        }
+                        finished = true;
+                        return;
                     }
-                    finished = true;
-                    return;
                 }
             }
 
@@ -1745,30 +1764,52 @@ public class ScriptExecutor {
          * Execute a block of instructions (for handlers/functions). Synchronous, no pausing.
          */
         private void executeInstructionBlock(List<CompiledScript.Instruction> instructions) {
+            java.util.Stack<TryBlock> localTryStack = new java.util.Stack<>();
             for (int i = 0; i < instructions.size(); i++) {
                 CompiledScript.Instruction instr = instructions.get(i);
-
-                if (instr.getOpcode() == CompiledScript.Opcode.RETURN) {
-                    ScriptNode valueNode = (ScriptNode) instr.getArg(0);
-                    Object result = valueNode != null ? evaluateExpression(valueNode) : null;
-                    throw new ReturnException(result);
-                }
-
-                if (instr.getOpcode() == CompiledScript.Opcode.JUMP) {
-                    int target = (Integer) instr.getArg(0);
-                    i = target - 1; // -1 because loop increments
-                    continue;
-                }
-                if (instr.getOpcode() == CompiledScript.Opcode.JUMP_IF_FALSE) {
-                    ScriptNode condNode = (ScriptNode) instr.getArg(0);
-                    int target = (Integer) instr.getArg(1);
-                    if (!isTruthy(evaluateExpression(condNode))) {
-                        i = target - 1;
+                try {
+                    if (instr.getOpcode() == CompiledScript.Opcode.RETURN) {
+                        ScriptNode valueNode = (ScriptNode) instr.getArg(0);
+                        Object result = valueNode != null ? evaluateExpression(valueNode) : null;
+                        throw new ReturnException(result);
                     }
-                    continue;
+                    if (instr.getOpcode() == CompiledScript.Opcode.JUMP) {
+                        int target = (Integer) instr.getArg(0);
+                        i = target - 1;
+                        continue;
+                    }
+                    if (instr.getOpcode() == CompiledScript.Opcode.JUMP_IF_FALSE) {
+                        ScriptNode condNode = (ScriptNode) instr.getArg(0);
+                        int target = (Integer) instr.getArg(1);
+                        if (!isTruthy(evaluateExpression(condNode))) {
+                            i = target - 1;
+                        }
+                        continue;
+                    }
+                    if (instr.getOpcode() == CompiledScript.Opcode.TRY_START) {
+                        int catchIp = (Integer) instr.getArg(0);
+                        String catchVar = (String) instr.getArg(1);
+                        localTryStack.push(new TryBlock(catchIp, catchVar));
+                        continue;
+                    }
+                    if (instr.getOpcode() == CompiledScript.Opcode.TRY_END) {
+                        if (!localTryStack.isEmpty()) localTryStack.pop();
+                        continue;
+                    }
+                    executeStatementInstruction(instr);
+                } catch (ReturnException e) {
+                    throw e;
+                } catch (Exception e) {
+                    if (!localTryStack.isEmpty()) {
+                        TryBlock tb = localTryStack.pop();
+                        i = tb.catchIp - 1; // -1 because loop increments
+                        if (tb.catchVar != null) {
+                            putVariable(tb.catchVar, e.getMessage() != null ? e.getMessage() : e.toString());
+                        }
+                    } else {
+                        throw new ScriptException(e.getMessage() != null ? e.getMessage() : e.toString(), instr.getLine());
+                    }
                 }
-
-                executeStatementInstruction(instr);
             }
         }
 
@@ -1864,6 +1905,10 @@ public class ScriptExecutor {
          * Returns true if execution should pause (async wait).
          */
         private boolean executeInstruction(CompiledScript.Instruction instruction) {
+            return executeInstruction(instruction, this.tryStack, null);
+        }
+
+        private boolean executeInstruction(CompiledScript.Instruction instruction, java.util.Stack<TryBlock> currentTryStack, AsyncTask taskScope) {
             switch (instruction.getOpcode()) {
                 case JUMP -> {
                     int targetIndex = (Integer) instruction.getArg(0);

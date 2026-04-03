@@ -20,6 +20,15 @@ public class ScriptParser {
     /**
      * Parse all tokens into a list of script nodes.
      */
+    
+    private <T extends ScriptNode> T withPos(T node, ScriptToken token) {
+        if (token != null) {
+            node.setLine(token.getLine());
+            node.setColumn(token.getColumn());
+        }
+        return node;
+    }
+
     public List<ScriptNode> parse() {
         List<ScriptNode> nodes = new ArrayList<>();
 
@@ -57,7 +66,7 @@ public class ScriptParser {
         if (match(ScriptToken.TokenType.AWAIT)) {
             ScriptNode node = parseStatement();
             if (node instanceof ScriptNode.FunctionCallNode callNode) {
-                return new ScriptNode.AwaitNode(callNode);
+                return withPos(new ScriptNode.AwaitNode(callNode), previous());
             }
             throw new ScriptException("Expected function call after 'await'", previous().getLine());
         }
@@ -98,6 +107,11 @@ public class ScriptParser {
             return parseAsyncStatement();
         }
 
+        
+        if (match(ScriptToken.TokenType.TRY)) {
+            return parseTryCatch();
+        }
+
         if (match(ScriptToken.TokenType.INCLUDE)) {
             return parseInclude();
         }
@@ -125,7 +139,7 @@ public class ScriptParser {
         ScriptToken name = expect(ScriptToken.TokenType.IDENTIFIER, "Expected variable name");
         expect(ScriptToken.TokenType.ASSIGN, "Expected '=' after variable name");
         ScriptNode initializer = parseExpression();
-        return new ScriptNode.VariableDeclarationNode(name.getValue(), initializer, scope);
+        return withPos(new ScriptNode.VariableDeclarationNode(name.getValue(), initializer, scope), previous());
     }
 
     private ScriptNode parseStatement() {
@@ -154,26 +168,26 @@ public class ScriptParser {
             String propertyName = parsePropertyOrMethodName();
             
             if (match(ScriptToken.TokenType.LPAREN)) {
-                return new ScriptNode.MethodCallNode(identifier.getValue(), propertyName, parseArguments());
+                return withPos(new ScriptNode.MethodCallNode(identifier.getValue(), propertyName, parseArguments()), previous());
             }
 
             if (match(ScriptToken.TokenType.LBRACKET)) {
-                ScriptNode node = new ScriptNode.PropertyAccessNode(identifier.getValue(), propertyName);
+                ScriptNode node = withPos(new ScriptNode.PropertyAccessNode(identifier.getValue(), propertyName), previous());
                 ScriptNode index = parseExpression();
                 expect(ScriptToken.TokenType.RBRACKET, "Expected ']' after index");
                 while (match(ScriptToken.TokenType.LBRACKET)) {
-                    node = new ScriptNode.IndexAccessNode(node, index);
+                    node = withPos(new ScriptNode.IndexAccessNode(node, index), previous());
                     index = parseExpression();
                     expect(ScriptToken.TokenType.RBRACKET, "Expected ']' after index");
                 }
                 expect(ScriptToken.TokenType.ASSIGN, "Expected '=' after index access");
                 ScriptNode value = parseExpression();
-                return new ScriptNode.IndexAssignmentNode(node, index, value);
+                return withPos(new ScriptNode.IndexAssignmentNode(node, index, value), previous());
             }
 
             expect(ScriptToken.TokenType.ASSIGN, "Expected '=' after property name");
             ScriptNode value = parseExpression();
-            return new ScriptNode.PropertyAssignmentNode(identifier.getValue(), propertyName, value);
+            return withPos(new ScriptNode.PropertyAssignmentNode(identifier.getValue(), propertyName, value), previous());
         }
 
         if (match(ScriptToken.TokenType.LPAREN)) {
@@ -184,26 +198,26 @@ public class ScriptParser {
                 advance();
                 return parseWidgetBody(identifier.getValue(), wargs);
             }
-            return new ScriptNode.FunctionCallNode(identifier.getValue(), wargs);
+            return withPos(new ScriptNode.FunctionCallNode(identifier.getValue(), wargs), previous());
         }
 
         if (match(ScriptToken.TokenType.LBRACKET)) {
-            ScriptNode node = new ScriptNode.IdentifierNode(identifier.getValue());
+            ScriptNode node = withPos(new ScriptNode.IdentifierNode(identifier.getValue()), previous());
             ScriptNode index = parseExpression();
             expect(ScriptToken.TokenType.RBRACKET, "Expected ']' after index");
             while (match(ScriptToken.TokenType.LBRACKET)) {
-                node = new ScriptNode.IndexAccessNode(node, index);
+                node = withPos(new ScriptNode.IndexAccessNode(node, index), previous());
                 index = parseExpression();
                 expect(ScriptToken.TokenType.RBRACKET, "Expected ']' after index");
             }
             expect(ScriptToken.TokenType.ASSIGN, "Expected '=' after index access");
             ScriptNode value = parseExpression();
-            return new ScriptNode.IndexAssignmentNode(node, index, value);
+            return withPos(new ScriptNode.IndexAssignmentNode(node, index, value), previous());
         }
 
         if (match(ScriptToken.TokenType.ASSIGN)) {
             ScriptNode value = parseExpression();
-            return new ScriptNode.VariableAssignmentNode(identifier.getValue(), value);
+            return withPos(new ScriptNode.VariableAssignmentNode(identifier.getValue(), value), previous());
         }
 
         throw new ScriptException("Expected '.', '(', '[' or '=' after identifier", identifier.getLine());
@@ -269,7 +283,7 @@ public class ScriptParser {
     private ScriptNode parseUnary() {
         if (match(ScriptToken.TokenType.NOT)) {
             ScriptNode operand = parseUnary();
-            return new ScriptNode.UnaryNotNode(operand);
+            return withPos(new ScriptNode.UnaryNotNode(operand), previous());
         }
         return parsePostfix();
     }
@@ -308,7 +322,7 @@ public class ScriptParser {
         }
         
         expect(ScriptToken.TokenType.RBRACE, "Expected '}'");
-        return new ScriptNode.NpcBlockNode(identifier, props);
+        return withPos(new ScriptNode.NpcBlockNode(identifier, props), previous());
     }
 
     private List<ScriptNode> parseArguments() {
@@ -330,7 +344,7 @@ public class ScriptParser {
             statements.add(parseDeclaration());
         }
         expect(ScriptToken.TokenType.RBRACE, "Expected '}'");
-        return new ScriptNode.BlockNode(statements);
+        return withPos(new ScriptNode.BlockNode(statements), previous());
     }
 
     private ScriptNode parseWhileStatement() {
@@ -346,7 +360,7 @@ public class ScriptParser {
             body = parseDeclaration();
         }
         
-        return new ScriptNode.WhileNode(condition, body);
+        return withPos(new ScriptNode.WhileNode(condition, body), previous());
     }
 
     private ScriptNode parseIfStatement() {
@@ -388,7 +402,7 @@ public class ScriptParser {
             }
         }
 
-        return new ScriptNode.IfNode(conditions, bodies);
+        return withPos(new ScriptNode.IfNode(conditions, bodies), previous());
     }
 
     /**
@@ -421,7 +435,7 @@ public class ScriptParser {
             body = parseDeclaration();
         }
         
-        return new ScriptNode.ForNode(identifier.getValue(), iterable, body);
+        return withPos(new ScriptNode.ForNode(identifier.getValue(), iterable, body), previous());
     }
 
     private ScriptNode parseFunctionDef() {
@@ -445,15 +459,15 @@ public class ScriptParser {
             body = parseDeclaration();
         }
 
-        return new ScriptNode.FunctionDefNode(name.getValue(), params, body);
+        return withPos(new ScriptNode.FunctionDefNode(name.getValue(), params, body), previous());
     }
 
     private ScriptNode parseReturn() {
         if (check(ScriptToken.TokenType.NEWLINE) || check(ScriptToken.TokenType.RBRACE) || check(ScriptToken.TokenType.EOF)) {
-            return new ScriptNode.ReturnNode(null);
+            return withPos(new ScriptNode.ReturnNode(null), previous());
         }
         ScriptNode value = parseExpression();
-        return new ScriptNode.ReturnNode(value);
+        return withPos(new ScriptNode.ReturnNode(value), previous());
     }
 
     private ScriptNode parseOnStatement() {
@@ -479,7 +493,7 @@ public class ScriptParser {
             body = parseDeclaration();
         }
 
-        return new ScriptNode.OnNode(eventName.getValue(), eventArgs, handlerId.getValue(), body);
+        return withPos(new ScriptNode.OnNode(eventName.getValue(), eventArgs, handlerId.getValue(), body), previous());
     }
 
     private ScriptNode parseEveryStatement() {
@@ -499,7 +513,7 @@ public class ScriptParser {
             body = parseDeclaration();
         }
 
-        return new ScriptNode.EveryNode(interval, handlerId.getValue(), body);
+        return withPos(new ScriptNode.EveryNode(interval, handlerId.getValue(), body), previous());
     }
 
     private ScriptNode parseStopStatement() {
@@ -507,7 +521,23 @@ public class ScriptParser {
         expect(ScriptToken.TokenType.LPAREN, "Expected '(' after 'stop'");
         ScriptToken handlerId = expect(ScriptToken.TokenType.IDENTIFIER, "Expected handler ID");
         expect(ScriptToken.TokenType.RPAREN, "Expected ')' after handler ID");
-        return new ScriptNode.StopNode(handlerId.getValue());
+        return withPos(new ScriptNode.StopNode(handlerId.getValue()), previous());
+    }
+
+    
+    private ScriptNode parseTryCatch() {
+        ScriptToken startToken = previous();
+        ScriptNode tryBlock = parseBlock();
+        String catchVarName = null;
+        ScriptNode catchBlock = null;
+        if (match(ScriptToken.TokenType.CATCH)) {
+            if (match(ScriptToken.TokenType.LPAREN)) {
+                catchVarName = expect(ScriptToken.TokenType.IDENTIFIER, "Expected variable name for catch block").getValue();
+                expect(ScriptToken.TokenType.RPAREN, "Expected ')' after catch variable");
+            }
+            catchBlock = parseBlock();
+        }
+        return withPos(new ScriptNode.TryCatchNode(tryBlock, catchVarName, catchBlock), startToken);
     }
 
     private ScriptNode parseInclude() {
@@ -516,7 +546,7 @@ public class ScriptParser {
         }
         advance();
         String scriptName = previous().getValue();
-        return new ScriptNode.IncludeNode(scriptName);
+        return withPos(new ScriptNode.IncludeNode(scriptName), previous());
     }
 
     private ScriptNode parseAsyncStatement() {
@@ -533,7 +563,7 @@ public class ScriptParser {
         } else {
             body = parseDeclaration();
         }
-        return new ScriptNode.AsyncNode(taskId, body);
+        return withPos(new ScriptNode.AsyncNode(taskId, body), previous());
     }
 
     private void skipNewlines() {
@@ -557,31 +587,31 @@ public class ScriptParser {
     private ScriptNode parsePrimary() {
         if (match(ScriptToken.TokenType.NUMBER)) {
             String val = previous().getValue();
-            if (val.contains(".")) return new ScriptNode.LiteralNode(Double.parseDouble(val));
-            return new ScriptNode.LiteralNode(Integer.parseInt(val));
+            if (val.contains(".")) return withPos(new ScriptNode.LiteralNode(Double.parseDouble(val)), previous());
+            return withPos(new ScriptNode.LiteralNode(Integer.parseInt(val)), previous());
         }
 
         if (match(ScriptToken.TokenType.STRING)) {
-            return new ScriptNode.LiteralNode(previous().getValue());
+            return withPos(new ScriptNode.LiteralNode(previous().getValue()), previous());
         }
 
         if (match(ScriptToken.TokenType.TRUE)) {
-            return new ScriptNode.LiteralNode(true);
+            return withPos(new ScriptNode.LiteralNode(true), previous());
         }
 
         if (match(ScriptToken.TokenType.FALSE)) {
-            return new ScriptNode.LiteralNode(false);
+            return withPos(new ScriptNode.LiteralNode(false), previous());
         }
 
         if (match(ScriptToken.TokenType.NULL)) {
-            return new ScriptNode.LiteralNode(null);
+            return withPos(new ScriptNode.LiteralNode(null), previous());
         }
 
         if (match(ScriptToken.TokenType.AWAIT)) {
             if (match(ScriptToken.TokenType.IDENTIFIER)) {
                 String functionName = previous().getValue();
                 expect(ScriptToken.TokenType.LPAREN, "Expected '(' after function name");
-                return new ScriptNode.AwaitNode(new ScriptNode.FunctionCallNode(functionName, parseArguments()));
+                return withPos(new ScriptNode.AwaitNode(new ScriptNode.FunctionCallNode(functionName, parseArguments())), previous());
             }
             throw new ScriptException("Expected function call after 'await'", previous().getLine());
         }
@@ -590,20 +620,20 @@ public class ScriptParser {
             String name = previous().getValue();
             
             if (match(ScriptToken.TokenType.LPAREN)) {
-                return new ScriptNode.FunctionCallNode(name, parseArguments());
+                return withPos(new ScriptNode.FunctionCallNode(name, parseArguments()), previous());
             }
 
             if (match(ScriptToken.TokenType.DOT)) {
                 ScriptToken member = expect(ScriptToken.TokenType.IDENTIFIER, "Expected property or method name after '.'");
                 
                 if (match(ScriptToken.TokenType.LPAREN)) {
-                    return new ScriptNode.MethodCallNode(name, member.getValue(), parseArguments());
+                    return withPos(new ScriptNode.MethodCallNode(name, member.getValue(), parseArguments()), previous());
                 }
                 
-                return new ScriptNode.PropertyAccessNode(name, member.getValue());
+                return withPos(new ScriptNode.PropertyAccessNode(name, member.getValue()), previous());
             }
 
-            return new ScriptNode.IdentifierNode(name);
+            return withPos(new ScriptNode.IdentifierNode(name), previous());
         }
 
         if (match(ScriptToken.TokenType.LPAREN)) {
@@ -620,7 +650,7 @@ public class ScriptParser {
                 } while (match(ScriptToken.TokenType.COMMA));
             }
             expect(ScriptToken.TokenType.RBRACKET, "Expected ']' to close list literal");
-            return new ScriptNode.ListLiteralNode(elements);
+            return withPos(new ScriptNode.ListLiteralNode(elements), previous());
         }
 
         throw new ScriptException("Expected expression, found " + (pos < tokens.size() ? tokens.get(pos).getType() : "EOF"), pos < tokens.size() ? tokens.get(pos).getLine() : -1);
@@ -680,7 +710,7 @@ public class ScriptParser {
             }
         }
         expect(ScriptToken.TokenType.RBRACE, "Expected '}' to close create ui block");
-        return new ScriptNode.UiBlockNode(variableName, rootProps, bodyStatements);
+        return withPos(new ScriptNode.UiBlockNode(variableName, rootProps, bodyStatements), previous());
     }
 
     /** Property names valid inside widget { } blocks (anything else with `name = expr` is a variable assignment). */
@@ -752,7 +782,7 @@ public class ScriptParser {
             }
         }
         expect(ScriptToken.TokenType.RBRACE, "Expected '}' to close widget block");
-        return new ScriptNode.UiWidgetNode(kind, args, props, events, children);
+        return withPos(new ScriptNode.UiWidgetNode(kind, args, props, events, children), previous());
     }
 
     // --- Helper methods ---

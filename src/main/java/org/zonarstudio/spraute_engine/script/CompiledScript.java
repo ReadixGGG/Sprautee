@@ -49,7 +49,9 @@ public class CompiledScript {
         AWAIT_CHAT,
         UI_WIDGET, // Emit a widget into the current UI builder context. Args: [String kind, List<ScriptNode> args, Map<String,ScriptNode> props, Map<String,List<Instruction>> eventHandlers, List<Instruction> childBody (nullable)]
         INCLUDE,   // Include another script's functions/handlers. Args: [String scriptName]
-        SET_INDEX  // Set array/map element. Args: [ScriptNode object, ScriptNode index, ScriptNode value]
+        SET_INDEX, // Set array/map element. Args: [ScriptNode object, ScriptNode index, ScriptNode value]
+        TRY_START, // Start try block. Args: [Integer catchTarget, String catchVar]
+        TRY_END    // End try block. Args: none
     }
 
     /**
@@ -58,11 +60,22 @@ public class CompiledScript {
     public static class Instruction {
         private final Opcode opcode;
         private final Object[] args;
+        private final int line;
+        private final int column;
 
         public Instruction(Opcode opcode, Object... args) {
+            this(-1, -1, opcode, args);
+        }
+
+        public Instruction(int line, int column, Opcode opcode, Object... args) {
+            this.line = line;
+            this.column = column;
             this.opcode = opcode;
             this.args = args;
         }
+
+        public int getLine() { return line; }
+        public int getColumn() { return column; }
 
         public Opcode getOpcode() {
             return opcode;

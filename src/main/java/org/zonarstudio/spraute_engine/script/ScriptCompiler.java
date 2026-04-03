@@ -29,28 +29,24 @@ public class ScriptCompiler {
 
     private void compileNode(ScriptNode node, List<CompiledScript.Instruction> instructions) {
         if (node instanceof ScriptNode.VariableDeclarationNode varNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.VAR_DECL,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.VAR_DECL,
                     varNode.getName(), varNode.getInitializer(), varNode.getScope()
             ));
         } else if (node instanceof ScriptNode.VariableAssignmentNode assignNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.VAR_ASSIGN,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.VAR_ASSIGN,
                     assignNode.getName(), assignNode.getValue()
             ));
         } else if (node instanceof ScriptNode.FunctionCallNode callNode) {
             if (callNode.getFunctionName().equals("stopTask")) {
                 if (callNode.getArgs().isEmpty()) throw new ScriptException("stop_task() requires task id");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.STOP_TASK, callNode.getArgs().get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.STOP_TASK, callNode.getArgs().get(0)));
             } else {
-                instructions.add(new CompiledScript.Instruction(
-                        CompiledScript.Opcode.CALL,
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.CALL,
                         callNode.getFunctionName(), callNode.getArgs()
                 ));
             }
         } else if (node instanceof ScriptNode.NpcBlockNode blockNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.NPC_BLOCK,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.NPC_BLOCK,
                     blockNode.getEntityId(), blockNode.getProperties()
             ));
         } else if (node instanceof ScriptNode.UiBlockNode uiBlock) {
@@ -58,13 +54,11 @@ public class ScriptCompiler {
             for (ScriptNode stmt : uiBlock.getBodyStatements()) {
                 compileNode(stmt, bodyInstructions);
             }
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.UI_BLOCK,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.UI_BLOCK,
                     uiBlock.getVariableName(), uiBlock.getRootProps(), bodyInstructions
             ));
         } else if (node instanceof ScriptNode.PropertyAssignmentNode propNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.SET_PROPERTY,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.SET_PROPERTY,
                     propNode.getObjectName(), propNode.getPropertyName(), propNode.getValue()
             ));
         } else if (node instanceof ScriptNode.AwaitNode awaitNode) {
@@ -73,65 +67,63 @@ public class ScriptCompiler {
 
             if (func.equals("time")) {
                 if (args.isEmpty()) throw new ScriptException("await time() requires seconds");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_TIME, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_TIME, args.get(0)));
             } else if (func.equals("interact")) {
                 if (args.isEmpty()) throw new ScriptException("await interact() requires entity id");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_INTERACT, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_INTERACT, args.get(0)));
             } else if (func.equals("next")) {
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_NEXT));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_NEXT));
             } else if (func.equals("keybind")) {
                 if (args.isEmpty()) throw new ScriptException("await keybind() requires key name");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_KEYBIND, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_KEYBIND, args.get(0)));
             } else if (func.equals("death")) {
                 if (args.isEmpty()) throw new ScriptException("await death() requires entity id");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_DEATH, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_DEATH, args.get(0)));
             } else if (func.equals("pickup")) {
                 if (args.size() < 3) throw new ScriptException("await pickup(npc_id, amount, item_id, nbt?) requires at least npc_id, amount, item_id");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_PICKUP,
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_PICKUP,
                         args.get(0), args.get(1), args.get(2), args.size() >= 4 ? args.get(3) : null));
             } else if (func.equals("task")) {
                 if (args.isEmpty()) throw new ScriptException("await task() requires task id");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_TASK, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_TASK, args.get(0)));
             } else if (func.equals("uiClick")) {
                 if (args.isEmpty()) throw new ScriptException("await uiClick(player) requires player");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_UI_CLICK, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_UI_CLICK, args.get(0)));
             } else if (func.equals("uiClose")) {
                 if (args.isEmpty()) throw new ScriptException("await uiClose(player) requires player");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_UI_CLOSE, args.get(0)));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_UI_CLOSE, args.get(0)));
             } else if (func.equals("uiInput")) {
                 if (args.isEmpty()) throw new ScriptException("await uiInput(player, [widget_id]) requires player");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_UI_INPUT, args.get(0), args.size() > 1 ? args.get(1) : null));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_UI_INPUT, args.get(0), args.size() > 1 ? args.get(1) : null));
             } else if (func.equals("position")) {
                 if (args.size() < 4) throw new ScriptException("await position(player, x, y, z, [radius]) requires at least 4 arguments");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_POSITION, args.get(0), args.get(1), args.get(2), args.get(3), args.size() > 4 ? args.get(4) : null));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_POSITION, args.get(0), args.get(1), args.get(2), args.get(3), args.size() > 4 ? args.get(4) : null));
             } else if (func.equals("inventory") || func.equals("hasItem")) {
                 if (args.size() < 2) throw new ScriptException("await inventory(player, item_id, [count]) requires player and item_id");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_INVENTORY, args.get(0), args.get(1), args.size() > 2 ? args.get(2) : null));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_INVENTORY, args.get(0), args.get(1), args.size() > 2 ? args.get(2) : null));
             } else if (func.equals("clickBlock")) {
                 if (args.isEmpty()) throw new ScriptException("await clickBlock(player, [block_id/coords]) requires player");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_CLICK_BLOCK, args));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_CLICK_BLOCK, args));
             } else if (func.equals("breakBlock")) {
                 if (args.isEmpty()) throw new ScriptException("await breakBlock(player, [block_id/coords]) requires player");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_BREAK_BLOCK, args));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_BREAK_BLOCK, args));
             } else if (func.equals("placeBlock")) {
                 if (args.isEmpty()) throw new ScriptException("await placeBlock(player, [block_id/coords]) requires player");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_PLACE_BLOCK, args));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_PLACE_BLOCK, args));
             } else if (func.equals("chat")) {
                 if (args.size() < 2) throw new ScriptException("await chat(player, message, [ignore_case], [ignore_punctuation]) requires player and message");
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.AWAIT_CHAT, args));
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_CHAT, args));
             } else {
                 throw new ScriptException("Unknown await trigger: " + func);
             }
         } else if (node instanceof ScriptNode.MethodCallNode methodNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.CALL_METHOD,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.CALL_METHOD,
                     methodNode.getObjectName(), methodNode.getMethodName(), methodNode.getArgs()
             ));
         } else if (node instanceof ScriptNode.PropertyAccessNode || node instanceof ScriptNode.IndexAccessNode) {
             // Stand-alone access as a statement is a no-op
         } else if (node instanceof ScriptNode.IndexAssignmentNode idxNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.SET_INDEX,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.SET_INDEX,
                     idxNode.getObject(), idxNode.getIndex(), idxNode.getValue()
             ));
         } else if (node instanceof ScriptNode.BlockNode blockNode) {
@@ -142,14 +134,14 @@ public class ScriptCompiler {
             int startIndex = instructions.size();
 
             int jumpIfFalseIdx = instructions.size();
-            instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.JUMP_IF_FALSE, whileNode.getCondition(), -1));
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.JUMP_IF_FALSE, whileNode.getCondition(), -1));
 
             compileNode(whileNode.getBody(), instructions);
 
-            instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.JUMP, startIndex));
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.JUMP, startIndex));
 
             int endIndex = instructions.size();
-            instructions.set(jumpIfFalseIdx, new CompiledScript.Instruction(CompiledScript.Opcode.JUMP_IF_FALSE, whileNode.getCondition(), endIndex));
+            instructions.set(jumpIfFalseIdx, new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.JUMP_IF_FALSE, whileNode.getCondition(), endIndex));
 
         } else if (node instanceof ScriptNode.IfNode ifNode) {
             compileIf(ifNode, instructions);
@@ -159,39 +151,33 @@ public class ScriptCompiler {
         } else if (node instanceof ScriptNode.FunctionDefNode funNode) {
             List<CompiledScript.Instruction> bodyInstructions = new ArrayList<>();
             compileNode(funNode.getBody(), bodyInstructions);
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.FUN_DEF,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.FUN_DEF,
                     funNode.getName(), funNode.getParams(), bodyInstructions
             ));
         } else if (node instanceof ScriptNode.ReturnNode returnNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.RETURN,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.RETURN,
                     returnNode.getValue()
             ));
         } else if (node instanceof ScriptNode.OnNode onNode) {
             List<CompiledScript.Instruction> bodyInstructions = new ArrayList<>();
             compileNode(onNode.getBody(), bodyInstructions);
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.REGISTER_ON,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.REGISTER_ON,
                     onNode.getEventName(), onNode.getEventArgs(), onNode.getHandlerId(), bodyInstructions
             ));
         } else if (node instanceof ScriptNode.EveryNode everyNode) {
             List<CompiledScript.Instruction> bodyInstructions = new ArrayList<>();
             compileNode(everyNode.getBody(), bodyInstructions);
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.REGISTER_EVERY,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.REGISTER_EVERY,
                     everyNode.getInterval(), everyNode.getHandlerId(), bodyInstructions
             ));
         } else if (node instanceof ScriptNode.StopNode stopNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.STOP_HANDLER,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.STOP_HANDLER,
                     stopNode.getHandlerId()
             ));
         } else if (node instanceof ScriptNode.AsyncNode asyncNode) {
             List<CompiledScript.Instruction> bodyInstructions = new ArrayList<>();
             compileNode(asyncNode.getBody(), bodyInstructions);
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.ASYNC_START,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.ASYNC_START,
                     asyncNode.getTaskId(),
                     bodyInstructions
             ));
@@ -214,14 +200,12 @@ public class ScriptCompiler {
                     compileNode(child, childBody);
                 }
             }
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.UI_WIDGET,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.UI_WIDGET,
                     widgetNode.getKind(), widgetNode.getArgs(), widgetNode.getProps(),
                     eventHandlers, childBody
             ));
         } else if (node instanceof ScriptNode.IncludeNode includeNode) {
-            instructions.add(new CompiledScript.Instruction(
-                    CompiledScript.Opcode.INCLUDE,
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.INCLUDE,
                     includeNode.getScriptName()
             ));
         }
@@ -237,16 +221,16 @@ public class ScriptCompiler {
 
             if (condition != null) {
                 int jumpIfFalseIdx = instructions.size();
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.JUMP_IF_FALSE, condition, -1));
+                instructions.add(new CompiledScript.Instruction(ifNode.getLine(), ifNode.getColumn(), CompiledScript.Opcode.JUMP_IF_FALSE, condition, -1));
 
                 compileNode(bodies.get(i), instructions);
 
                 int jumpToEndIdx = instructions.size();
-                instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.JUMP, -1));
+                instructions.add(new CompiledScript.Instruction(ifNode.getLine(), ifNode.getColumn(), CompiledScript.Opcode.JUMP, -1));
                 jumpToEndIndexes.add(jumpToEndIdx);
 
                 int nextBranchStart = instructions.size();
-                instructions.set(jumpIfFalseIdx, new CompiledScript.Instruction(CompiledScript.Opcode.JUMP_IF_FALSE, condition, nextBranchStart));
+                instructions.set(jumpIfFalseIdx, new CompiledScript.Instruction(ifNode.getLine(), ifNode.getColumn(), CompiledScript.Opcode.JUMP_IF_FALSE, condition, nextBranchStart));
             } else {
                 // 'else' branch — no condition
                 compileNode(bodies.get(i), instructions);
@@ -256,7 +240,7 @@ public class ScriptCompiler {
         int endIndex = instructions.size();
         for (int idx : jumpToEndIndexes) {
             CompiledScript.Instruction old = instructions.get(idx);
-            instructions.set(idx, new CompiledScript.Instruction(CompiledScript.Opcode.JUMP, endIndex));
+            instructions.set(idx, new CompiledScript.Instruction(ifNode.getLine(), ifNode.getColumn(), CompiledScript.Opcode.JUMP, endIndex));
         }
     }
 
@@ -291,18 +275,18 @@ public class ScriptCompiler {
             String varName = forNode.getVariableName();
 
             // VAR_DECL i = start
-            instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.VAR_DECL, varName, startNode));
+            instructions.add(new CompiledScript.Instruction(forNode.getLine(), forNode.getColumn(), CompiledScript.Opcode.VAR_DECL, varName, startNode));
 
             int conditionIndex = instructions.size();
 
             // JUMP_IF_FALSE (i < end) -> afterLoop (placeholder)
             ScriptNode condition = new ScriptNode.BinaryExpressionNode(
                     new ScriptNode.IdentifierNode(varName),
-                    new ScriptToken(ScriptToken.TokenType.LT, "<", -1),
+                    new ScriptToken(ScriptToken.TokenType.LT, "<", -1, -1),
                     endNode
             );
             int jumpIfFalseIdx = instructions.size();
-            instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.JUMP_IF_FALSE, condition, -1));
+            instructions.add(new CompiledScript.Instruction(forNode.getLine(), forNode.getColumn(), CompiledScript.Opcode.JUMP_IF_FALSE, condition, -1));
 
             // body
             compileNode(forNode.getBody(), instructions);
@@ -310,17 +294,17 @@ public class ScriptCompiler {
             // VAR_ASSIGN i = i + 1
             ScriptNode increment = new ScriptNode.BinaryExpressionNode(
                     new ScriptNode.IdentifierNode(varName),
-                    new ScriptToken(ScriptToken.TokenType.PLUS, "+", -1),
+                    new ScriptToken(ScriptToken.TokenType.PLUS, "+", -1, -1),
                     new ScriptNode.LiteralNode(1)
             );
-            instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.VAR_ASSIGN, varName, increment));
+            instructions.add(new CompiledScript.Instruction(forNode.getLine(), forNode.getColumn(), CompiledScript.Opcode.VAR_ASSIGN, varName, increment));
 
             // JUMP -> condition
-            instructions.add(new CompiledScript.Instruction(CompiledScript.Opcode.JUMP, conditionIndex));
+            instructions.add(new CompiledScript.Instruction(forNode.getLine(), forNode.getColumn(), CompiledScript.Opcode.JUMP, conditionIndex));
 
             // Fix up
             int endIndex = instructions.size();
-            instructions.set(jumpIfFalseIdx, new CompiledScript.Instruction(CompiledScript.Opcode.JUMP_IF_FALSE, condition, endIndex));
+            instructions.set(jumpIfFalseIdx, new CompiledScript.Instruction(forNode.getLine(), forNode.getColumn(), CompiledScript.Opcode.JUMP_IF_FALSE, condition, endIndex));
         } else {
             throw new ScriptException("for loops currently only support range() as iterable, e.g.: for (i in range(10)) { ... }");
         }

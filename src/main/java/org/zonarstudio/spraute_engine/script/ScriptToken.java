@@ -34,6 +34,8 @@ public class ScriptToken {
         GLOBAL,       // global keyword
         WORLD,        // world keyword (persistent in world)
         INCLUDE,      // include keyword
+        TRY,          // try keyword
+        CATCH,        // catch keyword
         ARROW,        // -> operator
         STRING,       // string literals "..."
         NUMBER,       // 123, 123.45
@@ -65,11 +67,13 @@ public class ScriptToken {
     private final TokenType type;
     private final String value;
     private final int line;
+    private final int column;
 
-    public ScriptToken(TokenType type, String value, int line) {
+    public ScriptToken(TokenType type, String value, int line, int column) {
         this.type = type;
         this.value = value;
         this.line = line;
+        this.column = column;
     }
 
     public TokenType getType() {
@@ -84,8 +88,12 @@ public class ScriptToken {
         return line;
     }
 
+    public int getColumn() {
+        return column;
+    }
+
     @Override
     public String toString() {
-        return "Token{" + type + ", '" + value + "', line=" + line + "}";
+        return "Token{" + type + ", '" + value + "', line=" + line + ", col=" + column + "}";
     }
 }
