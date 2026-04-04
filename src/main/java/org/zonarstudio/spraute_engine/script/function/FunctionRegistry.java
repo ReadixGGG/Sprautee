@@ -62,6 +62,8 @@ public class FunctionRegistry {
         register(new SpawnOrbFunction());
         register(new DropFunctions.AddMobDropFunction());
         register(new DropFunctions.AddBlockDropFunction());
+        register(new ScriptManagementFunctions.StartScriptFunction());
+        register(new ScriptManagementFunctions.StopScriptFunction());
     }
 
     public static void register(ScriptFunction function) {

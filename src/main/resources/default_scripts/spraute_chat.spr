@@ -4,7 +4,7 @@
 world val chat_history = list()
 
 fun calc_msg_height(text) {
-    var len = str_len(text)
+    var len = strLen(text)
     var lines = len // 40 + 1
     var h = lines * 10 + 20
     if (h < 40) {
@@ -77,21 +77,21 @@ fun npc_chat(player, npc_id, text, color) {
         }
     }
     
-    overlay_open(player, chat_hud)
-    play_sound(player, "minecraft:entity.experience_orb.pickup", 0.5, 1.0)
+    overlayOpen(player, chat_hud)
+    playSound(player, "minecraft:entity.experience_orb.pickup", 0.5, 1.0)
     
     # Анимация плавного появления
-    ui_animate(player, "chat_container", "alpha", 1.0, 0.3)
+    uiAnimate(player, "chat_container", "alpha", 1.0, 0.3)
     
     async {
         await time(5.0)
-        ui_animate(player, "chat_container", "alpha", 0.0, 0.3)
+        uiAnimate(player, "chat_container", "alpha", 0.0, 0.3)
         await time(0.3)
-        overlay_close(player)
+        overlayClose(player)
     }
 }
 
-on keybind("key.keyboard.b") -> chat_history_kb {
+on keybind("B") -> chat_history_kb {
     val player = _event_player
     var total_h = 0
     
@@ -148,5 +148,5 @@ on keybind("key.keyboard.b") -> chat_history_kb {
         }
     }
     
-    ui_open(player, history_ui)
+    uiOpen(player, history_ui)
 }
