@@ -1341,7 +1341,7 @@ public class ScriptExecutor {
         }
 
         public void onKeybind(String key, net.minecraft.world.entity.player.Player player) {
-            if (waitType == WaitType.KEYBIND && waitKeybindKey != null && waitKeybindKey.equals(key)) {
+            if (waitType == WaitType.KEYBIND && waitKeybindKey != null && waitKeybindKey.equalsIgnoreCase(key)) {
                 keybindMet = true;
                 keybindPlayer = player;
             }
@@ -1352,7 +1352,7 @@ public class ScriptExecutor {
                 if (!handler.active || !handler.eventName.equals("keybind")) continue;
                 if (!handler.eventArgs.isEmpty()) {
                     String expectedKey = String.valueOf(handler.eventArgs.get(0));
-                    if (!expectedKey.equals(key)) continue;
+                    if (!expectedKey.equalsIgnoreCase(key)) continue;
                 }
 
                 Object prevPlayer = variables.get("_event_player");
