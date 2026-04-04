@@ -18,7 +18,7 @@ create npc clicker_npc {
 clicker_npc.alwaysLookAt(block_x, block_y, block_z)
 
 fun init_player_data(p) {
-    val data = p.saved_data
+    val data = p.savedData
     if (data["money"] == null) {
         data["money"] = 0
         data["level"] = 1
@@ -63,10 +63,10 @@ create ui main_hud {
 }
 
 fun update_hud(p) {
-    val money = p.saved_data["money"]
-    val lvl = p.saved_data["level"]
-    val xp = p.saved_data["xp"]
-    val max_xp = p.saved_data["max_xp"]
+    val money = p.savedData["money"]
+    val lvl = p.savedData["level"]
+    val xp = p.savedData["xp"]
+    val max_xp = p.savedData["max_xp"]
     uiUpdate(p, "money_text", "text", "$ " + money)
     uiUpdate(p, "level_text", "text", "Уровень: " + lvl + " (" + xp + "/" + max_xp + ")")
     uiUpdate(p, "shop_money_text", "text", "Твой баланс: $ " + money)
@@ -106,7 +106,7 @@ create ui shop_ui {
 on uiClick() -> shop_click_handler {
     val p = _event_player
     val btn = _event_widget
-    val data = p.saved_data
+    val data = p.savedData
     val my_npc = "clicker_npc"
     
     if (btn == "upg_power") {
@@ -144,7 +144,7 @@ on keybind("G") -> shop_bind {
     val p = _event_player
     init_player_data(p)
     uiOpen(p, shop_ui)
-    uiUpdate(p, "shop_money_text", "text", "Твой баланс: $ " + p.saved_data["money"])
+    uiUpdate(p, "shop_money_text", "text", "Твой баланс: $ " + p.savedData["money"])
 }
 
 on orbPickup() -> clicker_orb {
@@ -152,7 +152,7 @@ on orbPickup() -> clicker_orb {
     val tex = _event_texture
     if (tex == "minecraft:textures/item/sunflower.png") {
         init_player_data(p)
-        val data = p.saved_data
+        val data = p.savedData
         data["money"] = data["money"] + _event_amount
         update_hud(p)
     }
@@ -164,7 +164,7 @@ on clickBlock(block_x, block_y, block_z) -> block_click {
     overlayOpen(p, main_hud)
     val power = p.saved_data["click_power"]
     val xp_gain = p.saved_data["xp_power"]
-    val data = p.saved_data
+    val data = p.savedData
     
     spawnOrb("minecraft:textures/item/sunflower.png", power, block_x + 0.5, block_y + 1.2, block_z + 0.5)
     
