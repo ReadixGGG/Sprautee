@@ -2666,6 +2666,16 @@ public class ScriptExecutor {
                             npc.clearHandItem("left");
                         }
                     }
+                    case "addDrop", "adddrop" -> {
+                        if (args.size() >= 1) {
+                            String item = String.valueOf(args.get(0));
+                            int min = args.size() >= 2 ? ((Number) args.get(1)).intValue() : 1;
+                            int max = args.size() >= 3 ? ((Number) args.get(2)).intValue() : 1;
+                            int chance = args.size() >= 4 ? ((Number) args.get(3)).intValue() : 100;
+                            String nbt = args.size() >= 5 ? String.valueOf(args.get(4)) : null;
+                            npc.customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule(item, min, max, chance, false, nbt));
+                        }
+                    }
                     case "remove" -> {
                         npc.discard();
                         // NpcManager entries for discarded UUIDs are naturally handled as missing/dead
@@ -3003,10 +3013,22 @@ public class ScriptExecutor {
                                 case "texture" -> npc.setTexture(String.valueOf(value));
                                 case "idleAnim" -> npc.setIdleAnim(String.valueOf(value));
                                 case "walkAnim" -> npc.setWalkAnim(String.valueOf(value));
-                                case "drop_item" -> npc.dropItem = String.valueOf(value);
-                                case "drop_min" -> npc.dropMin = value instanceof Number n ? n.intValue() : 1;
-                                case "drop_max" -> npc.dropMax = value instanceof Number n ? n.intValue() : 1;
-                                case "drop_chance" -> npc.dropChance = value instanceof Number n ? n.intValue() : 100;
+                                case "drop_item" -> {
+                                    if (npc.customDrops.isEmpty()) npc.customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule(String.valueOf(value), 1, 1, 100, false, null));
+                                    else npc.customDrops.get(0).itemId = String.valueOf(value);
+                                }
+                                case "drop_min" -> {
+                                    if (npc.customDrops.isEmpty()) npc.customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule("minecraft:air", value instanceof Number n ? n.intValue() : 1, 1, 100, false, null));
+                                    else npc.customDrops.get(0).min = value instanceof Number n ? n.intValue() : 1;
+                                }
+                                case "drop_max" -> {
+                                    if (npc.customDrops.isEmpty()) npc.customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule("minecraft:air", 1, value instanceof Number n ? n.intValue() : 1, 100, false, null));
+                                    else npc.customDrops.get(0).max = value instanceof Number n ? n.intValue() : 1;
+                                }
+                                case "drop_chance" -> {
+                                    if (npc.customDrops.isEmpty()) npc.customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule("minecraft:air", 1, 1, value instanceof Number n ? n.intValue() : 100, false, null));
+                                    else npc.customDrops.get(0).chance = value instanceof Number n ? n.intValue() : 100;
+                                }
                                 default -> npc.customData.put(propName, value);
                             }
                         }
@@ -3223,17 +3245,13 @@ public class ScriptExecutor {
                         if (props.containsKey("walkAnim")) {
                             npc.setWalkAnim(String.valueOf(props.get("walkAnim").get(0)));
                         }
-                        if (props.containsKey("drop_item")) {
-                            npc.dropItem = String.valueOf(props.get("drop_item").get(0));
-                        }
-                        if (props.containsKey("drop_min")) {
-                            npc.dropMin = ((Number)props.get("drop_min").get(0)).intValue();
-                        }
-                        if (props.containsKey("drop_max")) {
-                            npc.dropMax = ((Number)props.get("drop_max").get(0)).intValue();
-                        }
-                        if (props.containsKey("drop_chance")) {
-                            npc.dropChance = ((Number)props.get("drop_chance").get(0)).intValue();
+                        if (props.containsKey("drop_item") || props.containsKey("drop_min") || props.containsKey("drop_max") || props.containsKey("drop_chance")) {
+                            npc.customDrops.clear();
+                            String dItem = props.containsKey("drop_item") ? String.valueOf(props.get("drop_item").get(0)) : "minecraft:air";
+                            int dMin = props.containsKey("drop_min") ? ((Number)props.get("drop_min").get(0)).intValue() : 1;
+                            int dMax = props.containsKey("drop_max") ? ((Number)props.get("drop_max").get(0)).intValue() : 1;
+                            int dChance = props.containsKey("drop_chance") ? ((Number)props.get("drop_chance").get(0)).intValue() : 100;
+                            npc.customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule(dItem, dMin, dMax, dChance, false, null));
                         }
                         if (existing != npc) level.addFreshEntity(npc);
                         
@@ -3372,10 +3390,10 @@ public class ScriptExecutor {
                         case "java" -> npcEntity;
                         case "model" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.getModel() : "";
                         case "texture" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.getTexture() : "";
-                        case "drop_item" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.dropItem : "";
-                        case "drop_min" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.dropMin : 0;
-                        case "drop_max" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.dropMax : 0;
-                        case "drop_chance" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.dropChance : 0;
+                        case "drop_item" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? (!npc.customDrops.isEmpty() ? npc.customDrops.get(0).itemId : "") : "";
+                        case "drop_min" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? (!npc.customDrops.isEmpty() ? npc.customDrops.get(0).min : 0) : 0;
+                        case "drop_max" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? (!npc.customDrops.isEmpty() ? npc.customDrops.get(0).max : 0) : 0;
+                        case "drop_chance" -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? (!npc.customDrops.isEmpty() ? npc.customDrops.get(0).chance : 0) : 0;
                         default -> npcEntity instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc ? npc.customData.get(prop.getPropertyName()) : null;
                     };
                 }

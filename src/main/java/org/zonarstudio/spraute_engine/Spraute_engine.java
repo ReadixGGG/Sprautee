@@ -83,10 +83,16 @@ public class Spraute_engine {
                             new net.minecraft.resources.ResourceLocation(rule.itemId.contains(":") ? rule.itemId : "minecraft:" + rule.itemId)
                         );
                         if (item != null && item != net.minecraft.world.item.Items.AIR) {
+                            net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(item, count);
+                            if (rule.nbt != null && !rule.nbt.isEmpty()) {
+                                try {
+                                    stack.setTag(net.minecraft.nbt.TagParser.parseTag(rule.nbt));
+                                } catch (Exception e) {}
+                            }
                             net.minecraft.world.entity.item.ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
                                 event.getEntity().level,
                                 event.getEntity().getX(), event.getEntity().getY(), event.getEntity().getZ(),
-                                new net.minecraft.world.item.ItemStack(item, count)
+                                stack
                             );
                             itemEntity.setDefaultPickUpDelay();
                             event.getDrops().add(itemEntity);
@@ -130,12 +136,18 @@ public class Spraute_engine {
                             new net.minecraft.resources.ResourceLocation(rule.itemId.contains(":") ? rule.itemId : "minecraft:" + rule.itemId)
                         );
                         if (item != null && item != net.minecraft.world.item.Items.AIR) {
+                            net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(item, count);
+                            if (rule.nbt != null && !rule.nbt.isEmpty()) {
+                                try {
+                                    stack.setTag(net.minecraft.nbt.TagParser.parseTag(rule.nbt));
+                                } catch (Exception e) {}
+                            }
                             net.minecraft.world.entity.item.ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
                                 (net.minecraft.world.level.Level)event.getLevel(),
                                 event.getPos().getX() + 0.5,
                                 event.getPos().getY() + 0.5,
                                 event.getPos().getZ() + 0.5,
-                                new net.minecraft.world.item.ItemStack(item, count)
+                                stack
                             );
                             itemEntity.setDefaultPickUpDelay();
                             ((net.minecraft.world.level.Level)event.getLevel()).addFreshEntity(itemEntity);

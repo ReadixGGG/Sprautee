@@ -17,7 +17,7 @@ public class DropFunctions {
 
         @Override
         public Class<?>[] getArgTypes() {
-            return new Class<?>[] { String.class, String.class, Integer.class, Integer.class, Integer.class, Boolean.class };
+            return new Class<?>[] { String.class, String.class, Integer.class, Integer.class, Integer.class, Boolean.class, String.class };
         }
 
         @Override
@@ -29,7 +29,8 @@ public class DropFunctions {
             int max = args.size() > 3 ? ((Number) args.get(3)).intValue() : 1;
             int chance = args.size() > 4 ? ((Number) args.get(4)).intValue() : 100;
             boolean replace = args.size() > 5 && isTruthy(args.get(5));
-            CustomDropRegistry.addMobDrop(mobId, itemId, min, max, chance, replace);
+            String nbt = args.size() > 6 ? String.valueOf(args.get(6)) : null;
+            CustomDropRegistry.addMobDrop(mobId, itemId, min, max, chance, replace, nbt);
             return true;
         }
 
@@ -50,7 +51,7 @@ public class DropFunctions {
 
         @Override
         public Class<?>[] getArgTypes() {
-            return new Class<?>[] { String.class, String.class, Integer.class, Integer.class, Integer.class, Boolean.class };
+            return new Class<?>[] { String.class, String.class, Integer.class, Integer.class, Integer.class, Boolean.class, String.class };
         }
 
         @Override
@@ -62,7 +63,8 @@ public class DropFunctions {
             int max = args.size() > 3 ? ((Number) args.get(3)).intValue() : 1;
             int chance = args.size() > 4 ? ((Number) args.get(4)).intValue() : 100;
             boolean replace = args.size() > 5 && isTruthy(args.get(5));
-            CustomDropRegistry.addBlockDrop(blockId, itemId, min, max, chance, replace);
+            String nbt = args.size() > 6 ? String.valueOf(args.get(6)) : null;
+            CustomDropRegistry.addBlockDrop(blockId, itemId, min, max, chance, replace, nbt);
             return true;
         }
 

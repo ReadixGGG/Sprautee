@@ -108,10 +108,7 @@ public class SprauteNpcEntity extends PathfinderMob {
 
     public final java.util.Map<String, Object> customData = new java.util.concurrent.ConcurrentHashMap<>();
 
-    public String dropItem = "";
-    public int dropMin = 1;
-    public int dropMax = 1;
-    public int dropChance = 100;
+    public final java.util.List<org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule> customDrops = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     public SprauteNpcEntity(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
@@ -658,10 +655,19 @@ public class SprauteNpcEntity extends PathfinderMob {
         c.putString("IdleAnim", getIdleAnim());
         c.putString("WalkAnim", getWalkAnim());
         
-        c.putString("DropItem", dropItem);
-        c.putInt("DropMin", dropMin);
-        c.putInt("DropMax", dropMax);
-        c.putInt("DropChance", dropChance);
+        if (!customDrops.isEmpty()) {
+            net.minecraft.nbt.ListTag dropsList = new net.minecraft.nbt.ListTag();
+            for (var rule : customDrops) {
+                net.minecraft.nbt.CompoundTag ruleTag = new net.minecraft.nbt.CompoundTag();
+                ruleTag.putString("item", rule.itemId);
+                ruleTag.putInt("min", rule.min);
+                ruleTag.putInt("max", rule.max);
+                ruleTag.putInt("chance", rule.chance);
+                if (rule.nbt != null) ruleTag.putString("nbt", rule.nbt);
+                dropsList.add(ruleTag);
+            }
+            c.put("CustomDrops", dropsList);
+        }
     }
 
     @Override
@@ -674,23 +680,49 @@ public class SprauteNpcEntity extends PathfinderMob {
         if (c.contains("IdleAnim")) setIdleAnim(c.getString("IdleAnim"));
         if (c.contains("WalkAnim")) setWalkAnim(c.getString("WalkAnim"));
         
-        if (c.contains("DropItem")) dropItem = c.getString("DropItem");
-        if (c.contains("DropMin")) dropMin = c.getInt("DropMin");
-        if (c.contains("DropMax")) dropMax = c.getInt("DropMax");
-        if (c.contains("DropChance")) dropChance = c.getInt("DropChance");
+        customDrops.clear();
+        if (c.contains("CustomDrops", 9)) {
+            net.minecraft.nbt.ListTag dropsList = c.getList("CustomDrops", 10);
+            for (int i = 0; i < dropsList.size(); i++) {
+                net.minecraft.nbt.CompoundTag ruleTag = dropsList.getCompound(i);
+                String item = ruleTag.getString("item");
+                int min = ruleTag.getInt("min");
+                int max = ruleTag.getInt("max");
+                int chance = ruleTag.getInt("chance");
+                String nbt = ruleTag.contains("nbt") ? ruleTag.getString("nbt") : null;
+                customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule(item, min, max, chance, false, nbt));
+            }
+        }
+        
+        // Backward compatibility
+        if (c.contains("DropItem")) {
+            String dropItem = c.getString("DropItem");
+            if (dropItem != null && !dropItem.isEmpty()) {
+                int dropMin = c.contains("DropMin") ? c.getInt("DropMin") : 1;
+                int dropMax = c.contains("DropMax") ? c.getInt("DropMax") : 1;
+                int dropChance = c.contains("DropChance") ? c.getInt("DropChance") : 100;
+                customDrops.add(new org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule(dropItem, dropMin, dropMax, dropChance, false, null));
+            }
+        }
     }
 
     @Override
     protected void dropCustomDeathLoot(net.minecraft.world.damagesource.DamageSource source, int looting, boolean recentlyHit) {
         super.dropCustomDeathLoot(source, looting, recentlyHit);
-        if (dropItem != null && !dropItem.isEmpty()) {
-            if (this.random.nextInt(100) < dropChance) {
-                int amount = dropMin + this.random.nextInt(Math.max(1, dropMax - dropMin + 1));
+        for (var rule : customDrops) {
+            if (this.random.nextInt(100) < rule.chance) {
+                int amount = rule.min + this.random.nextInt(Math.max(1, rule.max - rule.min + 1));
                 net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(
-                    new net.minecraft.resources.ResourceLocation(dropItem.contains(":") ? dropItem : "minecraft:" + dropItem)
+                    new net.minecraft.resources.ResourceLocation(rule.itemId.contains(":") ? rule.itemId : "minecraft:" + rule.itemId)
                 );
                 if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                    this.spawnAtLocation(new net.minecraft.world.item.ItemStack(item, amount));
+                    net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(item, amount);
+                    if (rule.nbt != null && !rule.nbt.isEmpty()) {
+                        try {
+                            stack.setTag(net.minecraft.nbt.TagParser.parseTag(rule.nbt));
+                        } catch (Exception e) {}
+                    }
+                    this.spawnAtLocation(stack);
                 }
             }
         }
