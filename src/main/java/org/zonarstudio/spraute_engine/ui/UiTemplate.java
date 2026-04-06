@@ -263,6 +263,16 @@ public final class UiTemplate {
             if (animVal instanceof Boolean b) o.addProperty("animation", b);
             else o.addProperty("animation", String.valueOf(animVal));
         }
+        if (rw.evaluatedProps.containsKey("renderBones")) {
+            Object rbVal = rw.evaluatedProps.get("renderBones");
+            if (rbVal instanceof List<?> list) {
+                com.google.gson.JsonArray arr = new com.google.gson.JsonArray();
+                for (Object item : list) arr.add(String.valueOf(item));
+                o.add("renderBones", arr);
+            } else {
+                o.addProperty("renderBones", String.valueOf(rbVal));
+            }
+        }
         o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
         o.addProperty("order", order);
         String tooltip = propStr(rw.evaluatedProps, "tooltip", null);
