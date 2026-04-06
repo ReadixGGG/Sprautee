@@ -192,6 +192,10 @@ public class ScriptCompiler {
                     bodyInstructions
             ));
         } else if (node instanceof ScriptNode.UiWidgetNode widgetNode) {
+            if ("fadeIn".equals(widgetNode.getKind())) {
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.FADE_IN, widgetNode.getProps()));
+                return;
+            }
             Map<String, List<CompiledScript.Instruction>> eventHandlers = new HashMap<>();
             for (Map.Entry<String, ScriptNode> e : widgetNode.getEvents().entrySet()) {
                 if (!"onClick".equals(e.getKey())) continue;

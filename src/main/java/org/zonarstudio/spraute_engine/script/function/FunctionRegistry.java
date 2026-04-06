@@ -73,6 +73,7 @@ public class FunctionRegistry {
         register(new DropFunctions.AddBlockDropFunction());
         register(new ScriptManagementFunctions.StartScriptFunction());
         register(new ScriptManagementFunctions.StopScriptFunction());
+        register(new FadeOutFunction());
     }
 
     public static void register(ScriptFunction function) {

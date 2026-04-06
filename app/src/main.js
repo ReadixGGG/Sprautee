@@ -159,7 +159,8 @@ const sprauteFunctionsList = [
   "setBlockDisplayModel(${1:x}, ${2:y}, ${3:z}, ${4:id}, ${5:model}, ${6:texture}, ${7:ox}, ${8:oy}, ${9:oz}, ${10:rx}, ${11:ry}, ${12:rz}, ${13:scale})",
   "setBlockDisplayBlock(${1:x}, ${2:y}, ${3:z}, ${4:id}, ${5:block_id}, ${6:ox}, ${7:oy}, ${8:oz}, ${9:rx}, ${10:ry}, ${11:rz}, ${12:scale})",
   "removeBlockDisplay(${1:x}, ${2:y}, ${3:z}, ${4:id})",
-  "getBlockSlot(${1:x}, ${2:y}, ${3:z}, ${4:slot})"
+  "getBlockSlot(${1:x}, ${2:y}, ${3:z}, ${4:slot})",
+  "fadeOut()"
 ];
 
 function smartSnippetCompletion(template, options) {
@@ -199,6 +200,7 @@ const sprauteSnippets = [
   snippetCompletion('create npc ${1:name} {\n  name = "${2:Display Name}"\n  hp = ${3:20}\n  model = "geo/defolt.geo.json"\n  texture = "textures/entity/defolt.png"\n  animation = "animations/npc_classic.animation.json"\n  pos = ${4:0, 64, 0}\n  ${5}\n}', {label: "create npc", detail: "definition", type: "keyword"}),
   snippetCompletion('create block ${1:name} {\n  texture = "textures/block/${1}.png"\n  hardness = ${2:1.5}\n  ${3}\n}', {label: "create block", detail: "definition", type: "keyword"}),
   snippetCompletion('create item ${1:name} {\n  texture = "textures/item/${1}.png"\n  ${2}\n}', {label: "create item", detail: "definition", type: "keyword"}),
+  snippetCompletion('fadeIn {\n  text = "${1:Title}"\n  subtitle = "${2:Subtitle}"\n  time = ${3:1.0}\n  visible_time = ${4:2.0}\n  fadeout = ${5:true}\n  color = ${6:0x111111}\n}', {label: "fadeIn", detail: "block", type: "keyword"}),
   
   // on События
   snippetCompletion('on interact(${1:target}) -> ${2:handlerId} {\n  ${3}\n}', {label: "on interact", detail: "event", type: "keyword"}),

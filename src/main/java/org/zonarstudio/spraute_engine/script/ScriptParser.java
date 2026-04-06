@@ -181,6 +181,10 @@ public class ScriptParser {
             advance();
             return parseWidgetBody(fcn.getFunctionName(), fcn.getArgs());
         }
+        if (check(ScriptToken.TokenType.LBRACE) && expr instanceof ScriptNode.IdentifierNode idNode) {
+            advance();
+            return parseWidgetBody(idNode.getName(), java.util.Collections.emptyList());
+        }
 
         return expr;
     }

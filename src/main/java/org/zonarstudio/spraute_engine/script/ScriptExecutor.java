@@ -1207,6 +1207,7 @@ public class ScriptExecutor {
                 case NPC_BLOCK -> executeNpcBlock(instr);
                 case UI_BLOCK -> executeUiBlock(instr);
                 case COMMAND_BLOCK -> executeCommandBlock(instr);
+                case FADE_IN -> executeFadeIn(instr);
                 case UI_WIDGET -> executeUiWidget(instr);
                 case SET_PROPERTY -> executeSetProperty(instr);
                 case AWAIT_TIME -> {
@@ -2392,6 +2393,7 @@ public class ScriptExecutor {
                 case NPC_BLOCK -> executeNpcBlock(instruction);
                 case UI_BLOCK -> executeUiBlock(instruction);
                 case COMMAND_BLOCK -> executeCommandBlock(instruction);
+                case FADE_IN -> executeFadeIn(instruction);
                 case UI_WIDGET -> executeUiWidget(instruction);
                 case SET_PROPERTY -> executeSetProperty(instruction);
                 case SET_INDEX -> executeSetIndex(instruction);
@@ -3321,6 +3323,23 @@ public class ScriptExecutor {
                 LOGGER.info("[Script: {}] Registered custom command /{}", script.getName(), cmdName);
             } catch (Exception e) {
                 LOGGER.error("[Script: {}] Failed to register command /{}", script.getName(), cmdName, e);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        private void executeFadeIn(CompiledScript.Instruction instruction) {
+            java.util.Map<String, ScriptNode> propNodes = (java.util.Map<String, ScriptNode>) instruction.getArg(0);
+            java.util.Map<String, Object> props = new java.util.LinkedHashMap<>();
+            for (java.util.Map.Entry<String, ScriptNode> entry : propNodes.entrySet()) {
+                props.put(entry.getKey(), evaluateExpression(entry.getValue()));
+            }
+
+            net.minecraft.server.level.ServerPlayer player = (source.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) ? sp : null;
+            if (player != null) {
+                org.zonarstudio.spraute_engine.network.ModNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                        new org.zonarstudio.spraute_engine.network.SyncLoadScreenPacket(props)
+                );
             }
         }
 
