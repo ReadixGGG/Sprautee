@@ -23,7 +23,7 @@ public class ModEntities {
                     () -> EntityType.Builder.<SprauteOrbEntity>of((type, level) -> new SprauteOrbEntity(type, level), MobCategory.MISC)
                             .sized(0.5f, 0.5f)
                             .clientTrackingRange(6)
-                            .updateInterval(20)
+                            .updateInterval(1)
                             .build("spraute_orb"));
 
     public static void register(IEventBus eventBus) {

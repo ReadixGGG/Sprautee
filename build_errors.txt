@@ -1,0 +1,226 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. See https://docs.gradle.org/7.4.2/userguide/gradle_daemon.html#sec:disabling_the_daemon.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+WARNING: This project is configured to use the official obfuscation mappings provided by Mojang. These mapping fall under their associated license, you should be fully aware of this license. For the latest license text, refer below, or the reference copy here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md, You can hide this warning by running the `hideOfficialWarningUntilChanged` task
+WARNING: (c) 2020 Microsoft Corporation. These mappings are provided "as-is" and you bear the risk of using them. You may copy and use the mappings for development purposes, but you may not redistribute the mappings complete and unmodified. Microsoft makes no warranties, express or implied, with respect to the mappings provided here.  Use and modification of this document or the source code (in any form) of Minecraft: Java Edition is governed by the Minecraft End User License Agreement available at https://account.mojang.com/documents/minecraft_eula.
+
+> Task :compileJava
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\client\ClientParticleManager.java:70: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            ParticleType<?> type = ForgeRegistries.PARTICLE_TYPES.getValue(new ResourceLocation(task.particleType));
+                                                                           ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\client\SprauteScriptScreen.java:1438: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation rl = itemId.contains(":") ? new ResourceLocation(itemId) : new ResourceLocation("minecraft", itemId);
+                                                         ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\client\SprauteScriptScreen.java:1438: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation rl = itemId.contains(":") ? new ResourceLocation(itemId) : new ResourceLocation("minecraft", itemId);
+                                                                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\entity\SprauteNpcEntity.java:716: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                    new net.minecraft.resources.ResourceLocation(rule.itemId.contains(":") ? rule.itemId : "minecraft:" + rule.itemId)
+                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\command\SprauteCommands.java:232: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceLocation rl = soundId.contains(":") ? new net.minecraft.resources.ResourceLocation(soundId) : new net.minecraft.resources.ResourceLocation("minecraft", soundId);
+                                                                                  ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\command\SprauteCommands.java:232: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceLocation rl = soundId.contains(":") ? new net.minecraft.resources.ResourceLocation(soundId) : new net.minecraft.resources.ResourceLocation("minecraft", soundId);
+                                                                                                                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\entity\client\SprauteOrbRenderer.java:30: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation texture = texStr.contains(":") ? new ResourceLocation(texStr) : new ResourceLocation("minecraft", texStr);
+                                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\entity\client\SprauteOrbRenderer.java:30: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation texture = texStr.contains(":") ? new ResourceLocation(texStr) : new ResourceLocation("minecraft", texStr);
+                                                                                         ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\entity\client\SprauteOrbRenderer.java:66: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        if (texStr == null || texStr.isEmpty()) return new ResourceLocation("minecraft", "textures/entity/experience_orb.png");
+                                                       ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\entity\client\SprauteOrbRenderer.java:67: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        return texStr.contains(":") ? new ResourceLocation(texStr) : new ResourceLocation("minecraft", texStr);
+                                      ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\entity\client\SprauteOrbRenderer.java:67: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        return texStr.contains(":") ? new ResourceLocation(texStr) : new ResourceLocation("minecraft", texStr);
+                                                                     ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\network\ModNetwork.java:13: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            new ResourceLocation(Spraute_engine.MODID, "main"),
+            ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomBlockRegistry.java:142: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                                net.minecraft.resources.ResourceLocation rl = new net.minecraft.resources.ResourceLocation(iconStr.contains(":") ? iconStr : "minecraft:" + iconStr);
+                                                                              ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomBlockRegistry.java:352: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                event.register(Registry.BLOCK_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> block);
+                                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomBlockRegistry.java:363: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                Block block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new ResourceLocation(Spraute_engine.MODID, def.id));
+                                                                                            ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomBlockRegistry.java:365: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                    event.register(Registry.ITEM_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> new BlockItem(block, finalProps));
+                                                           ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomBlockRegistry.java:375: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                event.register(Registry.ITEM_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> new Item(finalProps));
+                                                       ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomBlockRegistry.java:385: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            event.register(Registry.BLOCK_ENTITY_TYPE_REGISTRY, new ResourceLocation(Spraute_engine.MODID, "custom_geo_block"), () -> CUSTOM_GEO_BLOCK_ENTITY);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomGeoBlockRenderer.java:74: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation textureLoc = new ResourceLocation(Spraute_engine.MODID, texturePath);
+                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\CustomParticleRegistry.java:76: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                event.register(Registry.PARTICLE_TYPE_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> type);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\CustomWorkbenchRegistry.java:36: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            event.register(Registry.RECIPE_TYPE_REGISTRY, new ResourceLocation(Spraute_engine.MODID, "custom_workbench"), () -> SPRAUTE_RECIPE_TYPE);
+                                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\CustomWorkbenchRegistry.java:39: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            event.register(Registry.RECIPE_SERIALIZER_REGISTRY, new ResourceLocation(Spraute_engine.MODID, "shaped"), () -> SHAPED_SERIALIZER);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\CustomWorkbenchRegistry.java:40: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            event.register(Registry.RECIPE_SERIALIZER_REGISTRY, new ResourceLocation(Spraute_engine.MODID, "shapeless"), () -> SHAPELESS_SERIALIZER);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\CustomWorkbenchRegistry.java:43: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            event.register(Registry.MENU_REGISTRY, new ResourceLocation(Spraute_engine.MODID, "custom_workbench"), () -> SPRAUTE_MENU_TYPE);
+                                                   ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\SprauteWrappedRecipe.java:86: error: cannot find symbol
+        return CustomWorkbenchRegistry.SPRAUTE_RECIPE_TYPE.get();
+                                                          ^
+  symbol:   method get()
+  location: variable SPRAUTE_RECIPE_TYPE of type RecipeType<SprauteCraftingRecipe>
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\SprauteWorkbenchScreen.java:12: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+    private static final ResourceLocation CRAFTING_TABLE_LOCATION = new ResourceLocation("textures/gui/container/crafting_table.png");
+                                                                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\registry\workbench\SprauteWorkbenchScreen.java:42: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            texture = new ResourceLocation(texStr.contains(":") ? texStr : "spraute_engine:" + texStr);
+                      ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\resource\ExternalAssetPack.java:417: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                if (def.isOre) list.add(new ResourceLocation(NAMESPACE, "worldgen/configured_feature/" + def.id + "_ore.json"));
+                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\resource\ExternalAssetPack.java:422: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                if (def.isOre) list.add(new ResourceLocation(NAMESPACE, "worldgen/placed_feature/" + def.id + "_ore.json"));
+                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\resource\ExternalAssetPack.java:427: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                if (def.isOre) list.add(new ResourceLocation(NAMESPACE, "forge/biome_modifier/" + def.id + "_ore.json"));
+                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\resource\ExternalAssetPack.java:433: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                list.add(new ResourceLocation(NAMESPACE, "particles/" + def.id + ".json"));
+                         ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\resource\ExternalAssetPack.java:439: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                list.add(new ResourceLocation(NAMESPACE, "recipes/" + recipeId + ".json"));
+                         ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\resource\ExternalAssetPack.java:453: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                        return new ResourceLocation(NAMESPACE, relative);
+                               ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\CountItemFunction.java:28: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation searchRL = new ResourceLocation(itemId);
+                                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\HasItemFunction.java:29: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation searchRL = new ResourceLocation(itemId);
+                                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\ItemFunctions.java:48: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation rl = itemId.contains(":") ? new ResourceLocation(itemId) : new ResourceLocation("minecraft", itemId);
+                                                         ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\ItemFunctions.java:48: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation rl = itemId.contains(":") ? new ResourceLocation(itemId) : new ResourceLocation("minecraft", itemId);
+                                                                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\ParticleFunctions.java:22: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation rl = new ResourceLocation(id.contains(":") ? id : "minecraft:" + id);
+                              ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SetBlockFunction.java:38: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation rl = blockId.contains(":") ? new ResourceLocation(blockId) : new ResourceLocation("minecraft", blockId);
+                                                      ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SetBlockFunction.java:38: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation rl = blockId.contains(":") ? new ResourceLocation(blockId) : new ResourceLocation("minecraft", blockId);
+                                                                                      ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SoundFunctions.java:46: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation rl = soundId.contains(":") ? new ResourceLocation(soundId) : new ResourceLocation("minecraft", soundId);
+                                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SoundFunctions.java:46: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation rl = soundId.contains(":") ? new ResourceLocation(soundId) : new ResourceLocation("minecraft", soundId);
+                                                                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SoundFunctions.java:88: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                ResourceLocation rl = soundId.contains(":") ? new ResourceLocation(soundId) : new ResourceLocation("minecraft", soundId);
+                                                              ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SoundFunctions.java:88: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                ResourceLocation rl = soundId.contains(":") ? new ResourceLocation(soundId) : new ResourceLocation("minecraft", soundId);
+                                                                                              ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\function\SpawnOrbFunction.java:43: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> resKey = net.minecraft.resources.ResourceKey.create(net.minecraft.core.Registry.DIMENSION_REGISTRY, new net.minecraft.resources.ResourceLocation(dimensionId.contains(":") ? dimensionId : "minecraft:" + dimensionId));
+                                                                                                                                                                                     ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:2976: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceLocation rl = new net.minecraft.resources.ResourceLocation(itemId);
+                                                          ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3367: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                    net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> resKey = net.minecraft.resources.ResourceKey.create(net.minecraft.core.Registry.DIMENSION_REGISTRY, new net.minecraft.resources.ResourceLocation(dimensionId.contains(":") ? dimensionId : "minecraft:" + dimensionId));
+                                                                                                                                                                                             ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3715: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                                net.minecraft.resources.ResourceLocation searchRL = new net.minecraft.resources.ResourceLocation(itemId);
+                                                                                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3731: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                                net.minecraft.resources.ResourceLocation searchRL = new net.minecraft.resources.ResourceLocation(itemId);
+                                                                                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3869: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceLocation targetRl = new net.minecraft.resources.ResourceLocation(itemId);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3902: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceLocation targetRl = new net.minecraft.resources.ResourceLocation(itemId);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3933: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                net.minecraft.resources.ResourceLocation targetRl = new net.minecraft.resources.ResourceLocation(itemId);
+                                                                    ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java:3957: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            net.minecraft.resources.ResourceLocation targetRl = new net.minecraft.resources.ResourceLocation(itemId);
+                                                                ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\Spraute_engine.java:32: warning: [removal] get() in FMLJavaModLoadingContext has been deprecated and marked for removal
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+                                                        ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\Spraute_engine.java:83: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                            new net.minecraft.resources.ResourceLocation(rule.itemId.contains(":") ? rule.itemId : "minecraft:" + rule.itemId)
+                            ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\Spraute_engine.java:136: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                            new net.minecraft.resources.ResourceLocation(rule.itemId.contains(":") ? rule.itemId : "minecraft:" + rule.itemId)
+                            ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\Spraute_engine.java:167: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                    net.minecraft.world.item.Item drop = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(Spraute_engine.MODID, dropId));
+                                                                                                                      ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\Spraute_engine.java:169: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                        drop = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation("minecraft", dropId));
+                                                                                            ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\Spraute_engine.java:287: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                net.minecraft.core.particles.SimpleParticleType type = (net.minecraft.core.particles.SimpleParticleType) net.minecraftforge.registries.ForgeRegistries.PARTICLE_TYPES.getValue(new net.minecraft.resources.ResourceLocation(MODID, def.id));
+                                                                                                                                                                                               ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\ui\SprauteUiJson.java:130: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            return new ResourceLocation("minecraft", "textures/misc/unknown_pack.png");
+                   ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\ui\SprauteUiJson.java:134: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            return new ResourceLocation(p[0], p[1]);
+                   ^
+D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\ui\SprauteUiJson.java:136: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        return new ResourceLocation("minecraft", path);
+               ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: D:\nnn\Spraute_Engine\src\main\java\org\zonarstudio\spraute_engine\script\ScriptExecutor.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+1 error
+61 warnings
+
+> Task :compileJava FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+See https://docs.gradle.org/7.4.2/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD FAILED in 13s
+1 actionable task: 1 executed

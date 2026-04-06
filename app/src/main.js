@@ -25,7 +25,7 @@ const sprauteLanguage = StreamLanguage.define({
     if (stream.match(/^"[^"]*$/)) return "error";
     if (stream.match(/^-?\d+(?:\.\d+)?/)) return "number";
     if (stream.match(/^(val|fun|on|create|npc|ui|if|else|elif|while|for|in|return|break|continue|true|false|null|await|time|say|playFreeze|playOnce|playLoop|stop|alwaysLookAt|lookAt)\b/)) return "keyword";
-    if (stream.match(/^(text|button|pos|anchor|size|color|scale|model|texture|animation|name|hp|show_name|background|slot|image|rect|progress)\b/)) return "propertyName";
+    if (stream.match(/^(text|button|pos|anchor|size|color|scale|model|texture|animation|name|hp|show_name|background|slot|image|rect|progress|pitch|yaw|look_x|look_y|look_z)\b/)) return "propertyName";
     if (stream.match(/^[a-zA-Z_]\w*(?=\s*\()/)) return "function";
     if (stream.match(/^[a-zA-Z_]\w*/)) return "variableName";
     if (stream.match(/^[+\-*\/=<>!&|]+/)) return "operator";
@@ -56,6 +56,9 @@ const sprauteKeywords = [
 const sprauteProperties = [
   // Базовые параметры NPC
   "name", "hp", "speed", "pos", "rotate", "showName", "collision", "model", "texture", "idleAnim", "walkAnim", "head",
+  
+  // Свойства сущностей
+  "x", "y", "z", "pitch", "yaw", "look_x", "look_y", "look_z", "uuid", "java", "data", "savedData",
   
   // Параметры кастомных блоков
   "texture_up", "texture_down", "texture_north", "texture_south", "texture_west", "texture_east",
@@ -141,7 +144,16 @@ const sprauteFunctionsList = [
   // Игрок
   "raycast(${1:max_dist})",
   "damage(${1:amount})",
-  "teleport(${1:x}, ${2:y}, ${3:z})"
+  "teleport(${1:x}, ${2:y}, ${3:z})",
+  
+  // Разное
+  "cancelEvent()",
+  "spawnOrb(${1:texture}, ${2:amount}, ${3:x}, ${4:y}, ${5:z})",
+  "removeOrbs(${1:texture})",
+  "addMobDrop(${1:mob_id}, ${2:item_id})",
+  "addBlockDrop(${1:block_id}, ${2:item_id})",
+  "drop(${1:item_id}, ${2:count})",
+  "addDrop(${1:item_id})"
 ];
 
 function smartSnippetCompletion(template, options) {

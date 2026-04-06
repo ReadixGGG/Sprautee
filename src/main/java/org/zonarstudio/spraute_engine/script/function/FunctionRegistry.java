@@ -49,6 +49,7 @@ public class FunctionRegistry {
         register(new DictFunctions.Get());
         register(new DictFunctions.Remove());
         register(new StrLenFunction());
+        register(new StrWidthFunction());
         register(new StrNewlineCountFunction());
         register(new SoundFunctions.PlaySound());
         register(new SoundFunctions.StopSound());
@@ -60,6 +61,8 @@ public class FunctionRegistry {
         register(new JavaFunctions.JavaNewFunction());
         register(new JavaFunctions.SendPacketFunction());
         register(new SpawnOrbFunction());
+        register(new RemoveOrbsFunction());
+        register(new CancelEventFunction());
         register(new DropFunctions.AddMobDropFunction());
         register(new DropFunctions.AddBlockDropFunction());
         register(new ScriptManagementFunctions.StartScriptFunction());

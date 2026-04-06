@@ -101,6 +101,7 @@ public class ScriptManager {
      */
     public void reload() {
         LOGGER.info("Reloading scripts...");
+        executor.stopAll();
         loadAll();
     }
 
@@ -220,8 +221,8 @@ public class ScriptManager {
         executor.onBreakBlock(player, pos, block);
     }
 
-    public void onPlaceBlock(net.minecraft.world.entity.player.Player player, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.Block block) {
-        executor.onPlaceBlock(player, pos, block);
+    public boolean onPlaceBlock(net.minecraft.world.entity.player.Player player, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.Block block) {
+        return executor.onPlaceBlock(player, pos, block);
     }
 
     public void onChat(net.minecraft.server.level.ServerPlayer player, String message) {

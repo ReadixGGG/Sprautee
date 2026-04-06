@@ -57,6 +57,12 @@ public class ScriptCompiler {
             instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.UI_BLOCK,
                     uiBlock.getVariableName(), uiBlock.getRootProps(), bodyInstructions
             ));
+        } else if (node instanceof ScriptNode.CommandDefNode cmdDef) {
+            List<CompiledScript.Instruction> bodyInstructions = new ArrayList<>();
+            compileNode(cmdDef.getBody(), bodyInstructions);
+            instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.COMMAND_BLOCK,
+                    cmdDef.getCommandName(), bodyInstructions
+            ));
         } else if (node instanceof ScriptNode.PropertyAssignmentNode propNode) {
             instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.SET_PROPERTY,
                     propNode.getObject(), propNode.getPropertyName(), propNode.getValue()

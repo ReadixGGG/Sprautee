@@ -546,6 +546,28 @@ package org.zonarstudio.spraute_engine.script;
     }
 
     /**
+     * create command name { ... }
+     */
+    class CommandDefNode implements ScriptNode {
+        private int line = -1;
+        private int column = -1;
+        @Override public int getLine() { return line; }
+        @Override public void setLine(int line) { this.line = line; }
+        @Override public int getColumn() { return column; }
+        @Override public void setColumn(int col) { this.column = col; }
+        private final String commandName;
+        private final ScriptNode body;
+
+        public CommandDefNode(String commandName, ScriptNode body) {
+            this.commandName = commandName;
+            this.body = body;
+        }
+
+        public String getCommandName() { return commandName; }
+        public ScriptNode getBody() { return body; }
+    }
+
+    /**
      * create ui name { ... } — body may contain widget declarations, loops, conditions, etc.
      */
     class UiBlockNode implements ScriptNode {

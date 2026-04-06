@@ -73,8 +73,23 @@ public final class UiTemplate {
         if (rootProps.containsKey("id")) {
             root.addProperty("id", String.valueOf(eval.apply(rootProps.get("id"))));
         }
+        if (rootProps.containsKey("pos")) {
+            Object posVal = eval.apply(rootProps.get("pos"));
+            if (posVal instanceof List<?> posList && posList.size() >= 2) {
+                Object xv = posList.get(0);
+                Object yv = posList.get(1);
+                if (xv instanceof Number n) root.addProperty("x", n);
+                else root.addProperty("x", String.valueOf(xv));
+                if (yv instanceof Number n) root.addProperty("y", n);
+                else root.addProperty("y", String.valueOf(yv));
+            }
+        }
         if (rootProps.containsKey("canClose")) {
             Object v = eval.apply(rootProps.get("canClose"));
+            boolean canClose = !(v instanceof Boolean b) || b;
+            root.addProperty("canClose", canClose);
+        } else if (rootProps.containsKey("can_close")) {
+            Object v = eval.apply(rootProps.get("can_close"));
             boolean canClose = !(v instanceof Boolean b) || b;
             root.addProperty("canClose", canClose);
         }
@@ -103,10 +118,13 @@ public final class UiTemplate {
             case "entity" -> buildEntity(rw, pw, ph, order);
             case "image" -> buildImage(rw, pw, ph, order);
             case "rect", "panel" -> buildRect(rw, pw, ph, order);
+            case "clip" -> buildClip(rw, pw, ph, order, handlers);
             case "scroll" -> buildScroll(rw, pw, ph, order, handlers);
             case "divider" -> buildDivider(rw, pw, ph, order);
             case "block" -> buildBlock(rw, pw, ph, order);
             case "item" -> buildItem(rw, pw, ph, order);
+            case "slot" -> buildSlot(rw, pw, ph, order);
+            case "player_inventory" -> buildPlayerInventory(rw, pw, ph, order);
             default -> null;
         };
     }
@@ -151,6 +169,16 @@ public final class UiTemplate {
             if (rw.evaluatedProps.containsKey("anchorY")) {
                 o.addProperty("anchorY", propFloat(rw.evaluatedProps, "anchorY", 0f));
             }
+        }
+        if (rw.evaluatedProps.containsKey("maxLines")) {
+            o.addProperty("maxLines", propInt(rw.evaluatedProps, "maxLines", 0));
+        } else if (rw.evaluatedProps.containsKey("max_lines")) {
+            o.addProperty("maxLines", propInt(rw.evaluatedProps, "max_lines", 0));
+        }
+        if (rw.evaluatedProps.containsKey("maxChars")) {
+            o.addProperty("maxChars", propInt(rw.evaluatedProps, "maxChars", 0));
+        } else if (rw.evaluatedProps.containsKey("max_chars")) {
+            o.addProperty("maxChars", propInt(rw.evaluatedProps, "max_chars", 0));
         }
         o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
         o.addProperty("order", order);
@@ -206,14 +234,35 @@ public final class UiTemplate {
         String entity = String.valueOf(rw.evaluatedArgs.get(0));
         JsonObject o = new JsonObject();
         o.addProperty("type", "entity");
-        String wid = propStr(rw.evaluatedProps, "id", "entity_" + order);
+        String defaultId = rw.evaluatedArgs.size() >= 2 ? String.valueOf(rw.evaluatedArgs.get(1)) : "entity_" + order;
+        String wid = propStr(rw.evaluatedProps, "id", defaultId);
         o.addProperty("id", wid);
         putXY(o, rw.evaluatedProps, "pos", pw, ph);
         putWH(o, rw.evaluatedProps, "size", 64, 96, pw, ph);
         o.addProperty("entity", entity);
         o.addProperty("scale", propFloat(rw.evaluatedProps, "scale", 1f));
-        o.addProperty("feetCrop", propFloat(rw.evaluatedProps, "feetCrop", 0.38f));
+        o.addProperty("feetCrop", propFloat(rw.evaluatedProps,
+                rw.evaluatedProps.containsKey("feetCrop") ? "feetCrop" : "feet_crop", 0.38f));
         putCropAndAnchor(o, rw.evaluatedProps);
+        if (rw.evaluatedProps.containsKey("nameTag")) {
+            o.addProperty("nameTag", propBool(rw.evaluatedProps, "nameTag", false));
+        }
+        if (rw.evaluatedProps.containsKey("noLookAt")) {
+            o.addProperty("noLookAt", propBool(rw.evaluatedProps, "noLookAt", false));
+        }
+        if (rw.evaluatedProps.containsKey("noFollowCursor") || rw.evaluatedProps.containsKey("no_follow_cursor")) {
+            String key = rw.evaluatedProps.containsKey("noFollowCursor") ? "noFollowCursor" : "no_follow_cursor";
+            o.addProperty("noFollowCursor", propBool(rw.evaluatedProps, key, false));
+        }
+        if (rw.evaluatedProps.containsKey("noHurtAnim") || rw.evaluatedProps.containsKey("no_hurt_anim")) {
+            String key = rw.evaluatedProps.containsKey("noHurtAnim") ? "noHurtAnim" : "no_hurt_anim";
+            o.addProperty("noHurtAnim", propBool(rw.evaluatedProps, key, false));
+        }
+        if (rw.evaluatedProps.containsKey("animation")) {
+            Object animVal = rw.evaluatedProps.get("animation");
+            if (animVal instanceof Boolean b) o.addProperty("animation", b);
+            else o.addProperty("animation", String.valueOf(animVal));
+        }
         o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
         o.addProperty("order", order);
         String tooltip = propStr(rw.evaluatedProps, "tooltip", null);
@@ -256,16 +305,16 @@ public final class UiTemplate {
             if (a instanceof List<?> list && list.size() >= 2) {
                 o.addProperty("anchorX", clamp01(toFloat(list.get(0))));
                 float ay = toFloat(list.get(1));
-                o.addProperty("anchorY", ay < 0f ? -1f : clamp01(ay));
+                o.addProperty("anchorY", ay < 0f ? -1f : ay);
             } else if (a instanceof String str) {
                 o.addProperty("anchor", str);
             }
         } else {
-            if (props.containsKey("anchorX")) {
-                o.addProperty("anchorX", propFloat(props, "anchorX", 0.5f));
+            if (props.containsKey("anchorX") || props.containsKey("anchor_x")) {
+                o.addProperty("anchorX", propFloat(props, props.containsKey("anchorX") ? "anchorX" : "anchor_x", 0.5f));
             }
-            if (props.containsKey("anchorY")) {
-                o.addProperty("anchorY", propFloat(props, "anchorY", 0.5f));
+            if (props.containsKey("anchorY") || props.containsKey("anchor_y")) {
+                o.addProperty("anchorY", propFloat(props, props.containsKey("anchorY") ? "anchorY" : "anchor_y", 0.5f));
             }
         }
     }
@@ -285,9 +334,18 @@ public final class UiTemplate {
     }
 
     private static JsonObject buildImage(RuntimeWidget rw, int pw, int ph, int order) {
-        if (rw.evaluatedArgs.size() < 2) return null;
-        String id = String.valueOf(rw.evaluatedArgs.get(0));
-        String texture = String.valueOf(rw.evaluatedArgs.get(1));
+        String id;
+        String texture;
+        if (rw.evaluatedArgs.size() >= 2) {
+            id = String.valueOf(rw.evaluatedArgs.get(0));
+            texture = String.valueOf(rw.evaluatedArgs.get(1));
+        } else if (rw.evaluatedArgs.size() == 1) {
+            id = String.valueOf(rw.evaluatedArgs.get(0));
+            texture = propStr(rw.evaluatedProps, "texture", "");
+        } else {
+            return null;
+        }
+        if (texture.isEmpty()) texture = propStr(rw.evaluatedProps, "texture", "minecraft:textures/misc/unknown_pack.png");
         JsonObject o = new JsonObject();
         o.addProperty("type", "image");
         o.addProperty("id", id);
@@ -296,6 +354,14 @@ public final class UiTemplate {
         o.addProperty("texture", texture);
         o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
         o.addProperty("order", order);
+        
+        if (rw.evaluatedProps.containsKey("slice_borders")) {
+            o.addProperty("slice_borders", propInt(rw.evaluatedProps, "slice_borders", 0));
+        }
+        if (rw.evaluatedProps.containsKey("slice_scale")) {
+            o.addProperty("slice_scale", propInt(rw.evaluatedProps, "slice_scale", 1));
+        }
+        
         return o;
     }
 
@@ -312,6 +378,60 @@ public final class UiTemplate {
         return o;
     }
 
+    private static JsonObject buildClip(RuntimeWidget rw, int pw, int ph, int order, Map<String, List<CompiledScript.Instruction>> handlers) {
+        String id = rw.evaluatedArgs.isEmpty() ? "clip_" + order : String.valueOf(rw.evaluatedArgs.get(0));
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "clip");
+        o.addProperty("id", id);
+        putXY(o, rw.evaluatedProps, "pos", pw, ph);
+        putWH(o, rw.evaluatedProps, "size", pw, ph, pw, ph);
+        o.addProperty("alpha", propFloat(rw.evaluatedProps, "alpha", 1.0f));
+        o.addProperty("layer", propInt(rw.evaluatedProps, "layer", 0));
+        o.addProperty("order", order);
+
+        if (rw.children != null && !rw.children.isEmpty()) {
+            JsonArray children = new JsonArray();
+            int childOrder = 0;
+            int sw = pw;
+            int sh = ph;
+            if (rw.evaluatedProps.containsKey("size")) {
+                Object sz = rw.evaluatedProps.get("size");
+                if (sz instanceof List<?> l && l.size() >= 2) {
+                    sw = toInt(l.get(0), pw);
+                    sh = toInt(l.get(1), ph);
+                }
+            } else {
+                if (rw.evaluatedProps.containsKey("w")) sw = toInt(rw.evaluatedProps.get("w"), pw);
+                if (rw.evaluatedProps.containsKey("h")) sh = toInt(rw.evaluatedProps.get("h"), ph);
+            }
+
+            for (RuntimeWidget child : rw.children) {
+                String ck = child.kind != null ? child.kind.toLowerCase() : "";
+                JsonObject co = switch (ck) {
+                    case "text" -> buildText(child, sw, sh, childOrder);
+                    case "button" -> buildButton(child, sw, sh, childOrder, handlers);
+                    case "entity" -> buildEntity(child, sw, sh, childOrder);
+                    case "image" -> buildImage(child, sw, sh, childOrder);
+                    case "rect", "panel" -> buildRect(child, sw, sh, childOrder);
+                    case "clip" -> buildClip(child, sw, sh, childOrder, handlers);
+                    case "scroll" -> buildScroll(child, sw, sh, childOrder, handlers);
+                    case "divider" -> buildDivider(child, sw, sh, childOrder);
+                    case "block" -> buildBlock(child, sw, sh, childOrder);
+                    case "item" -> buildItem(child, sw, sh, childOrder);
+                    case "slot" -> buildSlot(child, sw, sh, childOrder);
+                    case "player_inventory" -> buildPlayerInventory(child, sw, sh, childOrder);
+                    default -> null;
+                };
+                if (co != null) {
+                    children.add(co);
+                    childOrder++;
+                }
+            }
+            o.add("children", children);
+        }
+        return o;
+    }
+
     private static JsonObject buildScroll(RuntimeWidget rw, int pw, int ph, int order,
                                           Map<String, List<CompiledScript.Instruction>> handlers) {
         String id = rw.evaluatedArgs.isEmpty() ? "scroll_" + order : String.valueOf(rw.evaluatedArgs.get(0));
@@ -320,7 +440,12 @@ public final class UiTemplate {
         o.addProperty("id", id);
         putXY(o, rw.evaluatedProps, "pos", pw, ph);
         putWH(o, rw.evaluatedProps, "size", pw, ph, pw, ph);
-        int contentH = propInt(rw.evaluatedProps, "contentH", ph);
+        int contentH = ph;
+        if (rw.evaluatedProps.containsKey("contentH")) {
+            contentH = propInt(rw.evaluatedProps, "contentH", ph);
+        } else if (rw.evaluatedProps.containsKey("content_h")) {
+            contentH = propInt(rw.evaluatedProps, "content_h", ph);
+        }
         o.addProperty("contentH", contentH);
         o.addProperty("color", propStr(rw.evaluatedProps, "color", "#00000000"));
         Object scrollbarVal = rw.evaluatedProps.get("scrollbar");
@@ -352,9 +477,12 @@ public final class UiTemplate {
                     case "entity" -> buildEntity(child, sw, sh, childOrder);
                     case "image" -> buildImage(child, sw, sh, childOrder);
                     case "rect", "panel" -> buildRect(child, sw, sh, childOrder);
+                    case "clip" -> buildClip(child, sw, sh, childOrder, handlers);
                     case "divider" -> buildDivider(child, sw, sh, childOrder);
                     case "block" -> buildBlock(child, sw, sh, childOrder);
                     case "item" -> buildItem(child, sw, sh, childOrder);
+                    case "slot" -> buildSlot(child, sw, sh, childOrder);
+                    case "player_inventory" -> buildPlayerInventory(child, sw, sh, childOrder);
                     default -> null;
                 };
                 if (co != null) {
@@ -434,6 +562,26 @@ public final class UiTemplate {
         return o;
     }
 
+    private static JsonObject buildSlot(RuntimeWidget rw, int pw, int ph, int order) {
+        String id = rw.evaluatedArgs.isEmpty() ? "slot_" + order : String.valueOf(rw.evaluatedArgs.get(0));
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "slot");
+        o.addProperty("id", propStr(rw.evaluatedProps, "id", id));
+        putXY(o, rw.evaluatedProps, "pos", pw, ph);
+        o.addProperty("order", order);
+        return o;
+    }
+
+    private static JsonObject buildPlayerInventory(RuntimeWidget rw, int pw, int ph, int order) {
+        String id = rw.evaluatedArgs.isEmpty() ? "inv_" + order : String.valueOf(rw.evaluatedArgs.get(0));
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "player_inventory");
+        o.addProperty("id", propStr(rw.evaluatedProps, "id", id));
+        putXY(o, rw.evaluatedProps, "pos", pw, ph);
+        o.addProperty("order", order);
+        return o;
+    }
+
     private static boolean isTruthy(Object v) {
         if (v == null) return false;
         if (v instanceof Boolean b) return b;
@@ -448,8 +596,16 @@ public final class UiTemplate {
             putCoord(o, "x", list.get(0), pw);
             putCoord(o, "y", list.get(1), ph);
         } else {
-            o.addProperty("x", 0);
-            o.addProperty("y", 0);
+            if (props.containsKey("x")) {
+                putCoord(o, "x", props.get("x"), pw);
+            } else {
+                o.addProperty("x", 0);
+            }
+            if (props.containsKey("y")) {
+                putCoord(o, "y", props.get("y"), ph);
+            } else {
+                o.addProperty("y", 0);
+            }
         }
     }
 
@@ -460,8 +616,16 @@ public final class UiTemplate {
             putCoord(o, "w", list.get(0), pw);
             putCoord(o, "h", list.get(1), ph);
         } else {
-            o.addProperty("w", dw);
-            o.addProperty("h", dh);
+            if (props.containsKey("w")) {
+                putCoord(o, "w", props.get("w"), pw);
+            } else {
+                o.addProperty("w", dw);
+            }
+            if (props.containsKey("h")) {
+                putCoord(o, "h", props.get("h"), ph);
+            } else {
+                o.addProperty("h", dh);
+            }
         }
     }
 
@@ -560,5 +724,13 @@ public final class UiTemplate {
         if (v == null) return def;
         String s = String.valueOf(v);
         return s.isEmpty() ? def : s;
+    }
+
+    private static boolean propBool(Map<String, Object> props, String key, boolean def) {
+        Object v = props.get(key);
+        if (v == null) return def;
+        if (v instanceof Boolean b) return b;
+        String s = String.valueOf(v).trim().toLowerCase();
+        return "true".equals(s) || "1".equals(s);
     }
 }

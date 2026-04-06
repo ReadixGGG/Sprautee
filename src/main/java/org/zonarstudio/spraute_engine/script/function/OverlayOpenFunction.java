@@ -1,5 +1,7 @@
 package org.zonarstudio.spraute_engine.script.function;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -46,7 +48,31 @@ public class OverlayOpenFunction implements ScriptFunction {
 
         try {
             String prepared = SprauteUiJson.prepareAndSerialize(source.getLevel(), source, json);
-            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp), new OpenSprauteOverlayPacket(prepared));
+            String overlayId = "";
+            boolean isContainer = false;
+            try {
+                JsonObject root = JsonParser.parseString(prepared).getAsJsonObject();
+                if (root.has("id")) overlayId = root.get("id").getAsString();
+                if (root.has("type") && "container".equals(root.get("type").getAsString())) {
+                    isContainer = true;
+                }
+            } catch (Exception ignored) {}
+            
+            if (isContainer) {
+                net.minecraftforge.network.NetworkHooks.openScreen(sp, new net.minecraft.world.MenuProvider() {
+                    @Override
+                    public net.minecraft.network.chat.Component getDisplayName() {
+                        return net.minecraft.network.chat.Component.empty();
+                    }
+
+                    @Override
+                    public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inv, Player player) {
+                        return new org.zonarstudio.spraute_engine.ui.SprauteContainerMenu(id, inv, prepared);
+                    }
+                }, buf -> buf.writeUtf(prepared));
+            } else {
+                ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp), new OpenSprauteOverlayPacket(overlayId, prepared));
+            }
         } catch (Exception e) {
             LOGGER.warn("[Script] overlay_open failed: {}", e.getMessage());
         }

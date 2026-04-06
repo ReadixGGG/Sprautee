@@ -149,7 +149,12 @@ public class ScriptParser {
                 expect(ScriptToken.TokenType.LBRACE, "Expected '{' after create ui name");
                 return parseUiBlock(uiName.getValue());
             }
-            expect(ScriptToken.TokenType.NPC, "Expected 'npc' or 'ui' after 'create'");
+            if (match(ScriptToken.TokenType.COMMAND)) {
+                ScriptToken cmdName = expect(ScriptToken.TokenType.IDENTIFIER, "Expected name after 'create command'");
+                ScriptNode body = parseBlock();
+                return withPos(new ScriptNode.CommandDefNode(cmdName.getValue(), body), previous());
+            }
+            expect(ScriptToken.TokenType.NPC, "Expected 'npc', 'ui', or 'command' after 'create'");
             ScriptToken identifier = expect(ScriptToken.TokenType.IDENTIFIER, "Expected NPC identifier after 'create npc'");
             expect(ScriptToken.TokenType.LBRACE, "Expected '{' to start NPC block");
             return parseNpcBlock(identifier.getValue());
@@ -513,11 +518,15 @@ public class ScriptParser {
     }
 
     private ScriptNode parseInclude() {
+        boolean hasParen = match(ScriptToken.TokenType.LPAREN);
         if (!check(ScriptToken.TokenType.STRING) && !check(ScriptToken.TokenType.IDENTIFIER)) {
-            throw new ScriptException("Expected script name after 'include'", previous().getLine());
+            throw new ScriptException("Expected script name after 'import'", previous().getLine());
         }
         advance();
         String scriptName = previous().getValue();
+        if (hasParen) {
+            expect(ScriptToken.TokenType.RPAREN, "Expected ')' after script name");
+        }
         return withPos(new ScriptNode.IncludeNode(scriptName), previous());
     }
 
@@ -653,7 +662,8 @@ public class ScriptParser {
                 // Could be root prop or variable assignment
                 String name = idTok.getValue();
                 ScriptNode value = parseExpression();
-                if (name.equals("size") || name.equals("background") || name.equals("bg") || name.equals("id")) {
+                if (name.equals("size") || name.equals("background") || name.equals("bg") || name.equals("id") ||
+                    name.equals("canClose") || name.equals("can_close") || name.equals("pos")) {
                     rootProps.put(name, value);
                 } else {
                     bodyStatements.add(new ScriptNode.VariableAssignmentNode(name, value));
@@ -677,10 +687,11 @@ public class ScriptParser {
 
     /** Property names valid inside widget { } blocks (anything else with `name = expr` is a variable assignment). */
     private static final Set<String> WIDGET_PROPERTY_NAMES = Set.of(
-            "pos", "size", "w", "h", "color", "scale", "wrap", "align", "layer",
-            "contentH", "scrollbar", "autoScrollbar", "hover", "texture", "id",
-            "feetCrop", "crop", "anchor", "anchorX", "anchorY", "viewport", "tooltip", "block", "item",
-            "labelWrap", "labelScale", "subLabel", "subScale", "bgColor", "outlineColor", "maxLines", "maxChars", "inputType", "placeholder", "gridType", "cellSize", "thickness"
+            "pos", "size", "x", "y", "w", "h", "color", "alpha", "scale", "wrap", "align", "layer",
+            "contentH", "content_h", "scrollbar", "autoScrollbar", "hover", "texture", "id", "slice_borders", "slice_scale",
+            "feetCrop", "feet_crop", "crop", "anchor", "anchorX", "anchor_x", "anchorY", "anchor_y", "viewport", "tooltip", "block", "item",
+            "labelWrap", "labelScale", "subLabel", "subScale", "bgColor", "outlineColor", "maxLines", "max_lines", "maxChars", "max_chars", "inputType", "placeholder", "gridType", "cellSize", "thickness",
+            "nameTag", "name_tag", "noLookAt", "no_look_at", "noFollowCursor", "no_follow_cursor", "noHurtAnim", "no_hurt_anim", "animation"
     );
 
     private static boolean isWidgetPropertyName(String name) {

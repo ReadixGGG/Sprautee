@@ -71,7 +71,7 @@ public class CustomGeoBlockRenderer implements BlockEntityRenderer<CustomGeoBloc
             poseStack.mulPose(Vector3f.ZP.rotationDegrees(180.0F));
             poseStack.translate(0, -1.5, 0);
 
-            ResourceLocation textureLoc = new ResourceLocation(Spraute_engine.MODID, texturePath);
+            ResourceLocation textureLoc = texturePath.contains(":") ? new ResourceLocation(texturePath) : new ResourceLocation(Spraute_engine.MODID, texturePath);
             RenderType renderType = RenderType.entityTranslucent(textureLoc);
             VertexConsumer consumer = bufferSource.getBuffer(renderType);
 

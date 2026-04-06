@@ -18,6 +18,7 @@ public class CompiledScript {
         VAR_DECL,    // Declare variable. Args: [name, ScriptNode initializer, scope "local"|"global"|"world"]
         NPC_BLOCK,   // Spawn NPC via block. Args: [id, Map<String, List<ScriptNode>> props]
         UI_BLOCK,    // create ui: Args: [variableName, Map<String, ScriptNode> rootProps, List<Instruction> bodyInstructions]
+        COMMAND_BLOCK, // create command: Args: [commandName, List<Instruction> bodyInstructions]
         SET_PROPERTY, // Set property. Args: [objectId, propName, ScriptNode value]
         AWAIT_TIME,  // Wait for time. Args: [ScriptNode seconds]
         AWAIT_INTERACT, // Wait for interaction. Args: [ScriptNode entityId]

@@ -28,7 +28,7 @@ public final class SpAnimationCache {
     }
 
     private static SpAnimationParser.AnimationSet loadAnimation(String animationPath) {
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(Spraute_engine.MODID, animationPath);
+        ResourceLocation loc = animationPath.contains(":") ? new ResourceLocation(animationPath) : new ResourceLocation(Spraute_engine.MODID, animationPath);
         try {
             Optional<Resource> res = Minecraft.getInstance().getResourceManager().getResource(loc);
             if (res.isPresent()) {

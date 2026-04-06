@@ -51,6 +51,7 @@ public class CustomBlockRegistry {
         public int lightEmission = 0;
         public float hardness = 1.5f;
         public String dropItem;
+        public String tab;
         
         public boolean isOre = false;
         public int oreVeinSize = 8;
@@ -65,9 +66,13 @@ public class CustomBlockRegistry {
         public String model;
         public String texture;
         public int maxStackSize = 64;
+        public String tab;
     }
 
+    public static final Map<String, String> CUSTOM_RECIPES_JSON = new HashMap<>();
+
     public static final Map<String, CustomItemDef> ITEMS = new HashMap<>();
+    public static final Map<String, net.minecraft.world.item.CreativeModeTab> CUSTOM_TABS = new HashMap<>();
 
     private static void parseScripts() {
         if (parsed) return;
@@ -76,10 +81,25 @@ public class CustomBlockRegistry {
         Path scriptsDir = FMLPaths.GAMEDIR.get().resolve("spraute_engine").resolve("scripts");
         if (!Files.exists(scriptsDir)) return;
 
+        Pattern tabPattern = Pattern.compile("create\\s+tab\\s+([a-zA-Z0-9_]+)\\s*\\{([^}]*)\\}");
+        Pattern craftPattern = Pattern.compile("create\\s+craft\\s+([a-zA-Z0-9_]+)\\s*\\{([^}]*)\\}");
+        Pattern craftTypePattern = Pattern.compile("type\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftResultPattern = Pattern.compile("result\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftCountPattern = Pattern.compile("count\\s*=\\s*(\\d+)");
+        Pattern craftKeyPattern = Pattern.compile("key_([^\\s=]+)\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftPattern1Pattern = Pattern.compile("pattern_1\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftPattern2Pattern = Pattern.compile("pattern_2\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftPattern3Pattern = Pattern.compile("pattern_3\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftIngPattern = Pattern.compile("ingredient\\s*=\\s*\"([^\"]+)\"");
+        Pattern craftXpPattern = Pattern.compile("xp\\s*=\\s*([0-9.]+)");
+        Pattern craftTimePattern = Pattern.compile("time\\s*=\\s*(\\d+)");
+        Pattern craftIngsPattern = Pattern.compile("\"([^\"]+)\"");
         Pattern blockPattern = Pattern.compile("create\\s+block\\s+([a-zA-Z0-9_]+)\\s*\\{([^}]*)\\}");
         Pattern itemPattern = Pattern.compile("create\\s+item\\s+([a-zA-Z0-9_]+)\\s*\\{([^}]*)\\}");
         Pattern modelPattern = Pattern.compile("model\\s*=\\s*\"([^\"]+)\"");
         Pattern texturePattern = Pattern.compile("texture\\s*=\\s*\"([^\"]+)\"");
+        Pattern iconPattern = Pattern.compile("icon\\s*=\\s*\"([^\"]+)\"");
+        Pattern tabIdPattern = Pattern.compile("tab\\s*=\\s*\"([^\"]+)\"");
         Pattern textureUpPattern = Pattern.compile("texture_up\\s*=\\s*\"([^\"]+)\"");
         Pattern textureDownPattern = Pattern.compile("texture_down\\s*=\\s*\"([^\"]+)\"");
         Pattern textureNorthPattern = Pattern.compile("texture_north\\s*=\\s*\"([^\"]+)\"");
@@ -102,6 +122,103 @@ public class CustomBlockRegistry {
             Files.walk(scriptsDir).filter(p -> p.toString().endsWith(".spr")).forEach(file -> {
                 try {
                     String content = Files.readString(file);
+                    
+                    Matcher tabM = tabPattern.matcher(content);
+                    while (tabM.find()) {
+                        String id = tabM.group(1);
+                        String body = tabM.group(2);
+                        Matcher iconM = iconPattern.matcher(body);
+                        String iconStr = iconM.find() ? iconM.group(1) : "minecraft:stone";
+                        
+                        net.minecraft.world.item.CreativeModeTab customTab = new net.minecraft.world.item.CreativeModeTab("spraute_" + id) {
+                            @Override
+                            public net.minecraft.world.item.ItemStack makeIcon() {
+                                net.minecraft.resources.ResourceLocation rl = new net.minecraft.resources.ResourceLocation(iconStr.contains(":") ? iconStr : "minecraft:" + iconStr);
+                                net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(rl);
+                                return new net.minecraft.world.item.ItemStack(item != null ? item : net.minecraft.world.item.Items.STONE);
+                            }
+                        };
+                        CUSTOM_TABS.put(id, customTab);
+                    }
+                    
+                    Matcher craftM = craftPattern.matcher(content);
+                    while (craftM.find()) {
+                        String id = craftM.group(1);
+                        String body = craftM.group(2);
+                        
+                        Matcher typeM = craftTypePattern.matcher(body);
+                        String type = typeM.find() ? typeM.group(1) : "shaped";
+                        
+                        Matcher resM = craftResultPattern.matcher(body);
+                        String result = resM.find() ? resM.group(1) : "minecraft:stone";
+                        if (!result.contains(":")) result = Spraute_engine.MODID + ":" + result;
+                        
+                        Matcher countM = craftCountPattern.matcher(body);
+                        int count = countM.find() ? Integer.parseInt(countM.group(1)) : 1;
+                        
+                        StringBuilder json = new StringBuilder();
+                        
+                        if (type.equals("shaped")) {
+                            json.append("{\"type\": \"minecraft:crafting_shaped\", \"pattern\": [");
+                            Matcher p1 = craftPattern1Pattern.matcher(body);
+                            Matcher p2 = craftPattern2Pattern.matcher(body);
+                            Matcher p3 = craftPattern3Pattern.matcher(body);
+                            boolean hasP1 = p1.find(), hasP2 = p2.find(), hasP3 = p3.find();
+                            if (hasP1) json.append("\"").append(p1.group(1)).append("\"");
+                            if (hasP2) json.append(",\"").append(p2.group(1)).append("\"");
+                            if (hasP3) json.append(",\"").append(p3.group(1)).append("\"");
+                            json.append("], \"key\": {");
+                            
+                            Matcher keyM = craftKeyPattern.matcher(body);
+                            boolean firstKey = true;
+                            while (keyM.find()) {
+                                if (!firstKey) json.append(",");
+                                firstKey = false;
+                                String k = keyM.group(1);
+                                String item = keyM.group(2);
+                                if (!item.contains(":")) item = Spraute_engine.MODID + ":" + item;
+                                json.append("\"").append(k).append("\": {\"item\": \"").append(item).append("\"}");
+                            }
+                            json.append("}, \"result\": {\"item\": \"").append(result).append("\", \"count\": ").append(count).append("}}");
+                            
+                        } else if (type.equals("shapeless")) {
+                            json.append("{\"type\": \"minecraft:crafting_shapeless\", \"ingredients\": [");
+                            // Extract ingredients array: ingredients = ["x", "y"]
+                            Pattern arrayPat = Pattern.compile("ingredients\\s*=\\s*\\[([^\\]]+)\\]");
+                            Matcher arrM = arrayPat.matcher(body);
+                            if (arrM.find()) {
+                                Matcher itemM = craftIngsPattern.matcher(arrM.group(1));
+                                boolean firstItem = true;
+                                while (itemM.find()) {
+                                    if (!firstItem) json.append(",");
+                                    firstItem = false;
+                                    String item = itemM.group(1);
+                                    if (!item.contains(":")) item = Spraute_engine.MODID + ":" + item;
+                                    json.append("{\"item\": \"").append(item).append("\"}");
+                                }
+                            }
+                            json.append("], \"result\": {\"item\": \"").append(result).append("\", \"count\": ").append(count).append("}}");
+                            
+                        } else if (type.equals("smelting") || type.equals("blasting") || type.equals("smoking") || type.equals("campfire_cooking")) {
+                            json.append("{\"type\": \"minecraft:").append(type).append("\", \"ingredient\": {");
+                            Matcher ingM = craftIngPattern.matcher(body);
+                            String item = ingM.find() ? ingM.group(1) : "minecraft:cobblestone";
+                            if (!item.contains(":")) item = Spraute_engine.MODID + ":" + item;
+                            json.append("\"item\": \"").append(item).append("\"}");
+                            
+                            Matcher xpM = craftXpPattern.matcher(body);
+                            float xp = xpM.find() ? Float.parseFloat(xpM.group(1)) : 0.1f;
+                            
+                            Matcher timeM = craftTimePattern.matcher(body);
+                            int time = timeM.find() ? Integer.parseInt(timeM.group(1)) : 200;
+                            
+                            json.append(", \"result\": \"").append(result).append("\", \"experience\": ").append(xp).append(", \"cookingtime\": ").append(time).append("}");
+                        }
+                        
+                        if (json.length() > 0) {
+                            CUSTOM_RECIPES_JSON.put(id, json.toString());
+                        }
+                    }
                     
                     Matcher m = blockPattern.matcher(content);
                     while (m.find()) {
@@ -139,7 +256,10 @@ public class CustomBlockRegistry {
                         
                         Matcher dropM = dropPattern.matcher(body);
                         if (dropM.find()) def.dropItem = dropM.group(1);
-
+                        
+                        Matcher tabIdM = tabIdPattern.matcher(body);
+                        if (tabIdM.find()) def.tab = tabIdM.group(1);
+                        
                         Matcher isOreM = isOrePattern.matcher(body);
                         if (isOreM.find()) def.isOre = Boolean.parseBoolean(isOreM.group(1));
 
@@ -177,6 +297,9 @@ public class CustomBlockRegistry {
                         Matcher stackM = maxStackPattern.matcher(body);
                         if (stackM.find()) def.maxStackSize = Integer.parseInt(stackM.group(1));
 
+                        Matcher tabIdM2 = tabIdPattern.matcher(body);
+                        if (tabIdM2.find()) def.tab = tabIdM2.group(1);
+
                         ITEMS.put(def.id, def);
                         LOGGER.info("[Spraute Engine] Found custom item declaration: {}", def.id);
                     }
@@ -212,15 +335,23 @@ public class CustomBlockRegistry {
         if (event.getRegistryKey().equals(Registry.ITEM_REGISTRY)) {
             for (CustomBlockDef def : BLOCKS.values()) {
                 Item.Properties props = new Item.Properties();
+                if (def.tab != null && CUSTOM_TABS.containsKey(def.tab)) {
+                    props = props.tab(CUSTOM_TABS.get(def.tab));
+                }
+                final Item.Properties finalProps = props;
                 Block block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new ResourceLocation(Spraute_engine.MODID, def.id));
                 if (block != null) {
-                    event.register(Registry.ITEM_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> new BlockItem(block, props));
+                    event.register(Registry.ITEM_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> new BlockItem(block, finalProps));
                 }
             }
             
             for (CustomItemDef def : ITEMS.values()) {
                 Item.Properties props = new Item.Properties().stacksTo(def.maxStackSize);
-                event.register(Registry.ITEM_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> new Item(props));
+                if (def.tab != null && CUSTOM_TABS.containsKey(def.tab)) {
+                    props = props.tab(CUSTOM_TABS.get(def.tab));
+                }
+                final Item.Properties finalProps = props;
+                event.register(Registry.ITEM_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> new Item(finalProps));
             }
         }
         

@@ -5,8 +5,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Quaternion;
+import com.mojang.math.Vector3f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.screens.Screen;
@@ -46,6 +49,8 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 @OnlyIn(Dist.CLIENT)
 public class SprauteScriptScreen extends Screen {
 
+    private static final java.util.Map<String, SprauteScriptScreen> activeOverlays = new java.util.LinkedHashMap<>();
+    /** Legacy accessor — returns first overlay or null. */
     public static SprauteScriptScreen activeOverlay = null;
 
     private final JsonObject root;
@@ -69,7 +74,7 @@ public class SprauteScriptScreen extends Screen {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
-    private SprauteScriptScreen(JsonObject root) {
+    public SprauteScriptScreen(JsonObject root) {
         super(Component.empty());
         this.root = root;
         Minecraft mc = Minecraft.getInstance();
@@ -98,10 +103,13 @@ public class SprauteScriptScreen extends Screen {
         }
         if (p.isString()) {
             String s = p.getAsString().trim();
+            if ("center".equalsIgnoreCase(s)) {
+                return def;
+            }
             if (s.endsWith("%") && screenDim > 0) {
                 try {
                     float pct = Float.parseFloat(s.substring(0, s.length() - 1).trim());
-                    return Math.max(1, (int) (pct / 100f * screenDim));
+                    return Math.max(0, (int) (pct / 100f * screenDim));
                 } catch (NumberFormatException ignored) {
                     return def;
                 }
@@ -182,8 +190,8 @@ public class SprauteScriptScreen extends Screen {
         if (mc.screen instanceof SprauteScriptScreen screen) {
             screen.applyWidgetPatch(widgetId, field, value);
         }
-        if (activeOverlay != null) {
-            activeOverlay.applyWidgetPatch(widgetId, field, value);
+        for (SprauteScriptScreen overlay : activeOverlays.values()) {
+            overlay.applyWidgetPatch(widgetId, field, value);
         }
     }
 
@@ -400,7 +408,16 @@ public class SprauteScriptScreen extends Screen {
         animations.entrySet().removeIf(e -> e.getValue() == null || e.getValue().isEmpty());
     }
 
-    private static Widget patchWidget(Widget w, String field, String value) {
+    private int resolveSize(String val, boolean isWidth) {
+        String v = val.trim();
+        if (v.endsWith("%")) {
+            float pct = Float.parseFloat(v.substring(0, v.length() - 1));
+            return (int) (pct / 100f * (isWidth ? panelW : panelH));
+        }
+        return (int) Float.parseFloat(v);
+    }
+
+    private Widget patchWidget(Widget w, String field, String value) {
         if (field.isEmpty()) return w;
         try {
             if (w instanceof TextW tw) {
@@ -428,21 +445,21 @@ public class SprauteScriptScreen extends Screen {
             }
             if (w instanceof RectW rw) {
                 return switch (field) {
-                    case "x" -> new RectW((int)Float.parseFloat(value.trim()), rw.y, rw.w, rw.h, rw.color, rw.tooltip, rw.id);
-                    case "y" -> new RectW(rw.x, (int)Float.parseFloat(value.trim()), rw.w, rw.h, rw.color, rw.tooltip, rw.id);
-                    case "w" -> new RectW(rw.x, rw.y, (int)Float.parseFloat(value.trim()), rw.h, rw.color, rw.tooltip, rw.id);
-                    case "h" -> new RectW(rw.x, rw.y, rw.w, (int)Float.parseFloat(value.trim()), rw.color, rw.tooltip, rw.id);
+                    case "x" -> new RectW(resolveSize(value, true), rw.y, rw.w, rw.h, rw.color, rw.tooltip, rw.id);
+                    case "y" -> new RectW(rw.x, resolveSize(value, false), rw.w, rw.h, rw.color, rw.tooltip, rw.id);
+                    case "w" -> new RectW(rw.x, rw.y, resolveSize(value, true), rw.h, rw.color, rw.tooltip, rw.id);
+                    case "h" -> new RectW(rw.x, rw.y, rw.w, resolveSize(value, false), rw.color, rw.tooltip, rw.id);
                     case "color" -> new RectW(rw.x, rw.y, rw.w, rw.h, parseColor(value), rw.tooltip, rw.id);
                     default -> w;
                 };
             }
             if (w instanceof ImageW iw) {
                 return switch (field) {
-                    case "x" -> new ImageW((int)Float.parseFloat(value.trim()), iw.y, iw.w, iw.h, iw.texture, iw.tooltip, iw.id);
-                    case "y" -> new ImageW(iw.x, (int)Float.parseFloat(value.trim()), iw.w, iw.h, iw.texture, iw.tooltip, iw.id);
-                    case "w" -> new ImageW(iw.x, iw.y, (int)Float.parseFloat(value.trim()), iw.h, iw.texture, iw.tooltip, iw.id);
-                    case "h" -> new ImageW(iw.x, iw.y, iw.w, (int)Float.parseFloat(value.trim()), iw.texture, iw.tooltip, iw.id);
-                    case "texture" -> new ImageW(iw.x, iw.y, iw.w, iw.h, value, iw.tooltip, iw.id);
+                    case "x" -> new ImageW((int)Float.parseFloat(value.trim()), iw.y, iw.w, iw.h, iw.texture, iw.tooltip, iw.id, iw.sliceBorders, iw.sliceScale);
+                    case "y" -> new ImageW(iw.x, (int)Float.parseFloat(value.trim()), iw.w, iw.h, iw.texture, iw.tooltip, iw.id, iw.sliceBorders, iw.sliceScale);
+                    case "w" -> new ImageW(iw.x, iw.y, (int)Float.parseFloat(value.trim()), iw.h, iw.texture, iw.tooltip, iw.id, iw.sliceBorders, iw.sliceScale);
+                    case "h" -> new ImageW(iw.x, iw.y, iw.w, (int)Float.parseFloat(value.trim()), iw.texture, iw.tooltip, iw.id, iw.sliceBorders, iw.sliceScale);
+                    case "texture" -> new ImageW(iw.x, iw.y, iw.w, iw.h, value, iw.tooltip, iw.id, iw.sliceBorders, iw.sliceScale);
                     default -> w;
                 };
             }
@@ -457,23 +474,23 @@ public class SprauteScriptScreen extends Screen {
             }
             if (w instanceof EntityW ew) {
                 return switch (field) {
-                    case "x" -> new EntityW((int)Float.parseFloat(value.trim()), ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim);
-                    case "y" -> new EntityW(ew.x, (int)Float.parseFloat(value.trim()), ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim);
-                    case "w" -> new EntityW(ew.x, ew.y, (int)Float.parseFloat(value.trim()), ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim);
-                    case "h" -> new EntityW(ew.x, ew.y, ew.w, (int)Float.parseFloat(value.trim()), ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim);
-                    case "scale" -> new EntityW(ew.x, ew.y, ew.w, ew.h, Float.parseFloat(value.trim()), ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim);
-                    case "feetCrop" -> new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, Float.parseFloat(value.trim()), ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim);
-                    case "anchorX" -> new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, clamp01(Float.parseFloat(value.trim())), ew.anchorY, ew.disableAnim);
-                    case "anchorY" -> new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, parseAnchorYPatch(value), ew.disableAnim);
+                    case "x" -> new EntityW((int)Float.parseFloat(value.trim()), ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "y" -> new EntityW(ew.x, (int)Float.parseFloat(value.trim()), ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "w" -> new EntityW(ew.x, ew.y, (int)Float.parseFloat(value.trim()), ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "h" -> new EntityW(ew.x, ew.y, ew.w, (int)Float.parseFloat(value.trim()), ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "scale" -> new EntityW(ew.x, ew.y, ew.w, ew.h, Float.parseFloat(value.trim()), ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "feetCrop" -> new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, Float.parseFloat(value.trim()), ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "anchorX" -> new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, clamp01(Float.parseFloat(value.trim())), ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
+                    case "anchorY" -> new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, ew.cropL, ew.cropT, ew.cropR, ew.cropB, ew.anchorX, parseAnchorYPatch(value), ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
                     case "crop" -> {
                         float[] c = parseCropPatch(value);
-                        yield c != null ? new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, c[0], c[1], c[2], c[3], ew.anchorX, ew.anchorY, ew.disableAnim) : w;
+                        yield c != null ? new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, c[0], c[1], c[2], c[3], ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim) : w;
                     }
                     case "viewport" -> {
                         float[] vp = parseViewportPatch(value);
                         if (vp != null) {
                             float[] c = viewportCornersToCrop(vp);
-                            yield new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, c[0], c[1], c[2], c[3], ew.anchorX, ew.anchorY, ew.disableAnim);
+                            yield new EntityW(ew.x, ew.y, ew.w, ew.h, ew.scale, ew.entityUuid, ew.feetCrop, ew.tooltip, ew.id, c[0], c[1], c[2], c[3], ew.anchorX, ew.anchorY, ew.disableAnim, ew.hideNameTag, ew.noLookAt, ew.noFollowCursor, ew.noHurtAnim);
                         }
                         yield w;
                     }
@@ -584,7 +601,11 @@ public class SprauteScriptScreen extends Screen {
                     w.has("cellSize") ? w.get("cellSize").getAsInt() : 20,
                     w.has("thickness") ? w.get("thickness").getAsInt() : 1,
                     parseColor(w.has("color") ? w.get("color").getAsString() : "#44FFFFFF"), tooltip, wid);
-            case "image" -> new ImageW(x, y, ww, hh, w.has("texture") ? w.get("texture").getAsString() : "minecraft:textures/misc/unknown_pack.png", tooltip, wid);
+            case "image" -> {
+                int sliceBorders = w.has("slice_borders") ? w.get("slice_borders").getAsInt() : 0;
+                int sliceScale = w.has("slice_scale") ? w.get("slice_scale").getAsInt() : 1;
+                yield new ImageW(x, y, ww, hh, w.has("texture") ? w.get("texture").getAsString() : "minecraft:textures/misc/unknown_pack.png", tooltip, wid, sliceBorders, sliceScale);
+            }
             case "text" -> {
                 float[] anchors = parseAnchor(w);
                 yield new TextW(x, y, w.has("text") ? w.get("text").getAsString() : "", parseColor(w.has("color") ? w.get("color").getAsString() : "#FFFFFF"), w.has("scale") ? w.get("scale").getAsFloat() : 1f, tooltip, wid,
@@ -646,11 +667,14 @@ public class SprauteScriptScreen extends Screen {
                     if (a.size() >= 2) {
                         anchorX = clamp01(a.get(0).getAsFloat());
                         float ay = a.get(1).getAsFloat();
-                        anchorY = ay < 0f ? -1f : clamp01(ay);
+                        anchorY = ay < 0f ? -1f : ay;
                     }
                 } else {
                     if (w.has("anchorX")) anchorX = clamp01(w.get("anchorX").getAsFloat());
-                    if (w.has("anchorY")) anchorY = clamp01(w.get("anchorY").getAsFloat());
+                    if (w.has("anchorY")) {
+                        float ay = w.get("anchorY").getAsFloat();
+                        anchorY = ay < 0f ? -1f : ay;
+                    }
                 }
                 boolean disableAnim = false;
                 if (w.has("animation")) {
@@ -660,7 +684,11 @@ public class SprauteScriptScreen extends Screen {
                         else if (animEl.getAsString().equalsIgnoreCase("false")) disableAnim = true;
                     }
                 }
-                yield new EntityW(x, y, ww, hh, scale, uuid, feetCrop, tooltip, wid, crop[0], crop[1], crop[2], crop[3], anchorX, anchorY, disableAnim);
+                boolean hideNameTag = !w.has("nameTag") || !w.get("nameTag").getAsBoolean();
+                boolean noLookAt = w.has("noLookAt") && w.get("noLookAt").getAsBoolean();
+                boolean noFollowCursor = w.has("noFollowCursor") && w.get("noFollowCursor").getAsBoolean();
+                boolean noHurtAnim = w.has("noHurtAnim") && w.get("noHurtAnim").getAsBoolean();
+                yield new EntityW(x, y, ww, hh, scale, uuid, feetCrop, tooltip, wid, crop[0], crop[1], crop[2], crop[3], anchorX, anchorY, disableAnim, hideNameTag, noLookAt, noFollowCursor, noHurtAnim);
             }
             case "scroll" -> {
                 int contentH = readCoord(w, "contentH", ph);
@@ -790,7 +818,7 @@ public class SprauteScriptScreen extends Screen {
     private static float parseAnchorYPatch(String value) {
         float f = Float.parseFloat(value.trim());
         if (f < 0f) return -1f;
-        return clamp01(f);
+        return f;
     }
 
     /** JSON-массив или четыре числа через запятую/пробел (углы viewport). */
@@ -1078,7 +1106,7 @@ public class SprauteScriptScreen extends Screen {
         }
     }
 
-    private record ImageW(int x, int y, int w, int h, String texture, String tooltip, String id) implements Widget {
+    private record ImageW(int x, int y, int w, int h, String texture, String tooltip, String id, int sliceBorders, int sliceScale) implements Widget {
         @Override
         public String tooltip() {
             return tooltip;
@@ -1099,9 +1127,50 @@ public class SprauteScriptScreen extends Screen {
             RenderSystem.setShaderTexture(0, rl);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            GuiComponent.blit(poseStack, ax0 + x, ay0 + y, 0f, 0f, w, h, 256, 256);
+            
+            if (sliceBorders > 0) {
+                int b = sliceBorders;
+                int bs = b * sliceScale;
+                int ix = ax0 + x;
+                int iy = ay0 + y;
+                
+                // Draw corners
+                GuiComponent.blit(poseStack, ix, iy, 0, 0, bs, bs, 256, 256); // Top-Left
+                GuiComponent.blit(poseStack, ix + w - bs, iy, 256 - b, 0, bs, bs, 256, 256); // Top-Right
+                GuiComponent.blit(poseStack, ix, iy + h - bs, 0, 256 - b, bs, bs, 256, 256); // Bottom-Left
+                GuiComponent.blit(poseStack, ix + w - bs, iy + h - bs, 256 - b, 256 - b, bs, bs, 256, 256); // Bottom-Right
+                
+                // Draw edges (scaled appropriately)
+                if (w - bs * 2 > 0) {
+                    blitScaled(poseStack, ix + bs, iy, w - bs * 2, bs, b, 0, 256 - b * 2, b); // Top
+                    blitScaled(poseStack, ix + bs, iy + h - bs, w - bs * 2, bs, b, 256 - b, 256 - b * 2, b); // Bottom
+                }
+                if (h - bs * 2 > 0) {
+                    blitScaled(poseStack, ix, iy + bs, bs, h - bs * 2, 0, b, b, 256 - b * 2); // Left
+                    blitScaled(poseStack, ix + w - bs, iy + bs, bs, h - bs * 2, 256 - b, b, b, 256 - b * 2); // Right
+                }
+                
+                // Draw center
+                if (w - bs * 2 > 0 && h - bs * 2 > 0) {
+                    blitScaled(poseStack, ix + bs, iy + bs, w - bs * 2, h - bs * 2, b, b, 256 - b * 2, 256 - b * 2); // Center
+                }
+            } else {
+                GuiComponent.blit(poseStack, ax0 + x, ay0 + y, 0f, 0f, w, h, 256, 256);
+            }
+            
             RenderSystem.disableBlend();
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        }
+        
+        private void blitScaled(PoseStack poseStack, int x, int y, int width, int height, float uOffset, float vOffset, int uWidth, int vHeight) {
+            com.mojang.blaze3d.vertex.BufferBuilder bufferbuilder = com.mojang.blaze3d.vertex.Tesselator.getInstance().getBuilder();
+            com.mojang.math.Matrix4f matrix4f = poseStack.last().pose();
+            bufferbuilder.begin(com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS, com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX);
+            bufferbuilder.vertex(matrix4f, (float)x, (float)(y + height), 0.0F).uv(uOffset / 256.0F, (vOffset + (float)vHeight) / 256.0F).endVertex();
+            bufferbuilder.vertex(matrix4f, (float)(x + width), (float)(y + height), 0.0F).uv((uOffset + (float)uWidth) / 256.0F, (vOffset + (float)vHeight) / 256.0F).endVertex();
+            bufferbuilder.vertex(matrix4f, (float)(x + width), (float)y, 0.0F).uv((uOffset + (float)uWidth) / 256.0F, vOffset / 256.0F).endVertex();
+            bufferbuilder.vertex(matrix4f, (float)x, (float)y, 0.0F).uv(uOffset / 256.0F, vOffset / 256.0F).endVertex();
+            com.mojang.blaze3d.vertex.Tesselator.getInstance().end();
         }
     }
 
@@ -1323,13 +1392,13 @@ public class SprauteScriptScreen extends Screen {
             float oldAlpha = screen.currentAlpha;
             screen.currentAlpha *= alpha;
             int sx = ax0 + x, sy = ay0 + y;
-            GuiComponent.enableScissor(sx, sy, sx + w, sy + h);
+            pushScissor(sx, sy, sx + w, sy + h);
             try {
                 for (Widget child : children) {
                     child.render(screen, poseStack, sx, sy, mouseX, mouseY, partialTick);
                 }
             } finally {
-                GuiComponent.disableScissor();
+                popScissor();
             }
             screen.currentAlpha = oldAlpha;
         }
@@ -1368,14 +1437,14 @@ public class SprauteScriptScreen extends Screen {
             if ((currentBgColor & 0xFF000000) != 0) {
                 GuiComponent.fill(poseStack, sx, sy, sx + w, sy + h, currentBgColor);
             }
-            GuiComponent.enableScissor(sx, sy, sx + w, sy + h);
+            pushScissor(sx, sy, sx + w, sy + h);
             try {
                 int offsetY = -(int) scrollOffset;
                 for (Widget child : children) {
                     child.render(screen, poseStack, sx, sy + offsetY, mouseX, mouseY, partialTick);
                 }
             } finally {
-                GuiComponent.disableScissor();
+                popScissor();
             }
             boolean shouldShowBar = autoBar ? (contentH > h) : showBar;
             if (shouldShowBar && contentH > h) {
@@ -1465,6 +1534,150 @@ public class SprauteScriptScreen extends Screen {
     }
 
     public static boolean disableEntityAnimations = false;
+    public static boolean hideEntityNameTag = false;
+
+    private static final Map<UUID, org.zonarstudio.spraute_engine.entity.SprauteNpcEntity> uiDummyCache = new HashMap<>();
+
+    private static org.zonarstudio.spraute_engine.entity.SprauteNpcEntity getOrCreateDummy(
+            LivingEntity source, boolean noLookAt, boolean disableAnim, boolean noHurt) {
+        UUID key = source.getUUID();
+        Minecraft mc = Minecraft.getInstance();
+        org.zonarstudio.spraute_engine.entity.SprauteNpcEntity dummy = uiDummyCache.get(key);
+        if (dummy == null) {
+            dummy = new org.zonarstudio.spraute_engine.entity.SprauteNpcEntity(
+                    org.zonarstudio.spraute_engine.entity.ModEntities.SPRAUTE_NPC.get(), mc.level);
+            uiDummyCache.put(key, dummy);
+        }
+        if (source instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity npc) {
+            dummy.setModel(npc.getModel());
+            dummy.setTexture(npc.getTexture());
+            dummy.setAnimation(npc.getAnimation());
+            dummy.setIdleAnim(npc.getIdleAnim());
+            dummy.setWalkAnim("");
+            dummy.setCustomName(npc.getCustomName());
+        }
+        // renderEntityInInventory sets yBodyRot=180, yRot=180, yHeadRot=180 but does NOT touch *O fields.
+        // Custom renderer lerps between *O and current, so *O must match to prevent interpolation artifacts.
+        float neutralYaw = noLookAt ? 180f : source.getYRot();
+        float neutralYawO = noLookAt ? 180f : source.yRotO;
+        float neutralPitch = noLookAt ? 0f : source.getXRot();
+        dummy.setYRot(neutralYaw);
+        dummy.yRotO = neutralYawO;
+        dummy.yHeadRot = neutralYaw;
+        dummy.yHeadRotO = neutralYawO;
+        dummy.yBodyRot = neutralYaw;
+        dummy.yBodyRotO = neutralYawO;
+        dummy.setXRot(neutralPitch);
+        dummy.xRotO = noLookAt ? 0f : source.xRotO;
+        dummy.hurtTime = 0;
+        dummy.deathTime = 0;
+        dummy.setCustomNameVisible(false);
+        dummy.tickCount = disableAnim ? 0 : source.tickCount;
+        dummy.attackAnim = 0f;
+        dummy.oAttackAnim = 0f;
+        return dummy;
+    }
+
+    public static void clearDummyCache() {
+        uiDummyCache.clear();
+    }
+
+    /**
+     * Renders an entity at the given screen position, fully controlling all rotation fields
+     * (including *O variants) to prevent interpolation artifacts. This is a replacement for
+     * InventoryScreen.renderEntityInInventory when we need precise control over entity pose.
+     */
+    private static void renderEntityDirect(int posX, int posY, int scale, float mouseX, float mouseY, LivingEntity entity) {
+        float f = (float) Math.atan(mouseX / 40.0f);
+        float g = (float) Math.atan(mouseY / 40.0f);
+
+        PoseStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushPose();
+        modelView.translate(posX, posY, 1050.0);
+        modelView.scale(1.0f, 1.0f, -1.0f);
+        RenderSystem.applyModelViewMatrix();
+
+        PoseStack poseStack = new PoseStack();
+        poseStack.translate(0.0, 0.0, 1000.0);
+        poseStack.scale(scale, scale, scale);
+        Quaternion flip = Vector3f.ZP.rotationDegrees(180.0f);
+        Quaternion tilt = Vector3f.XP.rotationDegrees(g * 20.0f);
+        flip.mul(tilt);
+        poseStack.mulPose(flip);
+
+        float bodyYaw = 180.0f + f * 20.0f;
+        float yaw = 180.0f + f * 40.0f;
+        float pitch = -g * 20.0f;
+
+        float oldBodyRot = entity.yBodyRot;
+        float oldBodyRotO = entity.yBodyRotO;
+        float oldYRot = entity.getYRot();
+        float oldYRotO = entity.yRotO;
+        float oldXRot = entity.getXRot();
+        float oldXRotO = entity.xRotO;
+        float oldHeadRot = entity.yHeadRot;
+        float oldHeadRotO = entity.yHeadRotO;
+
+        entity.yBodyRot = bodyYaw;
+        entity.yBodyRotO = bodyYaw;
+        entity.setYRot(yaw);
+        entity.yRotO = yaw;
+        entity.setXRot(pitch);
+        entity.xRotO = pitch;
+        entity.yHeadRot = yaw;
+        entity.yHeadRotO = yaw;
+
+        Lighting.setupForEntityInInventory();
+        var dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        dispatcher.setRenderShadow(false);
+        var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+        RenderSystem.runAsFancy(() -> {
+            dispatcher.render(entity, 0.0, 0.0, 0.0, 0.0f, 1.0f, poseStack, bufferSource, 15728880);
+        });
+        bufferSource.endBatch();
+        dispatcher.setRenderShadow(true);
+
+        entity.yBodyRot = oldBodyRot;
+        entity.yBodyRotO = oldBodyRotO;
+        entity.setYRot(oldYRot);
+        entity.yRotO = oldYRotO;
+        entity.setXRot(oldXRot);
+        entity.xRotO = oldXRotO;
+        entity.yHeadRot = oldHeadRot;
+        entity.yHeadRotO = oldHeadRotO;
+
+        Lighting.setupFor3DItems();
+        modelView.popPose();
+        RenderSystem.applyModelViewMatrix();
+    }
+
+    private static final java.util.Stack<int[]> scissorStack = new java.util.Stack<>();
+
+    public static void pushScissor(int x0, int y0, int x1, int y1) {
+        if (!scissorStack.isEmpty()) {
+            int[] parent = scissorStack.peek();
+            x0 = Math.max(x0, parent[0]);
+            y0 = Math.max(y0, parent[1]);
+            x1 = Math.min(x1, parent[2]);
+            y1 = Math.min(y1, parent[3]);
+            if (x1 < x0) x1 = x0;
+            if (y1 < y0) y1 = y0;
+        }
+        scissorStack.push(new int[]{x0, y0, x1, y1});
+        GuiComponent.enableScissor(x0, y0, x1, y1);
+    }
+
+    public static void popScissor() {
+        if (!scissorStack.isEmpty()) {
+            scissorStack.pop();
+        }
+        if (scissorStack.isEmpty()) {
+            GuiComponent.disableScissor();
+        } else {
+            int[] parent = scissorStack.peek();
+            GuiComponent.enableScissor(parent[0], parent[1], parent[2], parent[3]);
+        }
+    }
 
     /**
      * @param cropL..cropB доли 0–1 — сколько срезать слева, сверху, справа, снизу от ячейки {@code size}.
@@ -1476,7 +1689,9 @@ public class SprauteScriptScreen extends Screen {
             float scale, UUID entityUuid, float feetCrop,
             String tooltip, String id,
             float cropL, float cropT, float cropR, float cropB,
-            float anchorX, float anchorY, boolean disableAnim
+            float anchorX, float anchorY, boolean disableAnim,
+            boolean hideNameTag, boolean noLookAt, boolean noFollowCursor,
+            boolean noHurtAnim
     ) implements Widget {
         @Override
         public String tooltip() {
@@ -1505,6 +1720,15 @@ public class SprauteScriptScreen extends Screen {
                 GuiComponent.fill(poseStack, left, top, right, bottom, 0x66000000);
                 return;
             }
+
+            boolean useDummy = noLookAt || noFollowCursor || noHurtAnim || disableAnim || hideNameTag;
+            LivingEntity renderTarget;
+            if (useDummy && living instanceof org.zonarstudio.spraute_engine.entity.SprauteNpcEntity) {
+                renderTarget = getOrCreateDummy(living, noLookAt, disableAnim, noHurtAnim);
+            } else {
+                renderTarget = living;
+            }
+
             float sx0f = left + w * cropL;
             float sy0f = top + h * cropT;
             float sx1f = left + w * (1f - cropR);
@@ -1513,7 +1737,7 @@ public class SprauteScriptScreen extends Screen {
             int sy0 = (int) Math.floor(sy0f);
             int sx1 = (int) Math.ceil(sx1f);
             int sy1 = (int) Math.ceil(sy1f);
-            GuiComponent.enableScissor(sx0, sy0, sx1, sy1);
+            pushScissor(sx0, sy0, sx1, sy1);
             try {
                 int cx = (int) (left + w * anchorX);
                 int cy;
@@ -1524,23 +1748,48 @@ public class SprauteScriptScreen extends Screen {
                     float anchorFrac = 0.48f + t * 0.20f;
                     cy = top + (int) (h * anchorFrac);
                 }
-                int sc = Math.max(18, (int) (Math.min(w, h) * 0.44f * scale));
+                int sc = Math.max(8, (int) (Math.min(w, h) * 0.44f * scale));
+
                 boolean prevDisable = SprauteScriptScreen.disableEntityAnimations;
+                boolean prevHideName = SprauteScriptScreen.hideEntityNameTag;
                 SprauteScriptScreen.disableEntityAnimations = disableAnim;
-                InventoryScreen.renderEntityInInventory(cx, cy, sc, (float) cx - mouseX, (float) (cy - 50) - mouseY, living);
+                SprauteScriptScreen.hideEntityNameTag = hideNameTag;
+
+                boolean dontFollow = noLookAt || noFollowCursor;
+                float lookX = dontFollow ? 0f : (float) cx - mouseX;
+                float lookY = dontFollow ? 0f : (float) (cy - 50) - mouseY;
+
+                if (useDummy) {
+                    renderEntityDirect(cx, cy, sc, lookX, lookY, renderTarget);
+                } else {
+                    InventoryScreen.renderEntityInInventory(cx, cy, sc, lookX, lookY, renderTarget);
+                }
+
                 SprauteScriptScreen.disableEntityAnimations = prevDisable;
+                SprauteScriptScreen.hideEntityNameTag = prevHideName;
             } finally {
-                GuiComponent.disableScissor();
+                popScissor();
             }
         }
     }
 
     public static void openOverlay(String json) {
+        openOverlay("", json);
+    }
+
+    public static void openOverlay(String overlayId, String json) {
         try {
             JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-            activeOverlay = new SprauteScriptScreen(root);
+            SprauteScriptScreen overlay = new SprauteScriptScreen(root);
             Minecraft mc = Minecraft.getInstance();
-            activeOverlay.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+            overlay.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+            String id = (overlayId != null && !overlayId.isEmpty()) ? overlayId : "";
+            if (id.isEmpty() && root.has("id")) {
+                id = root.get("id").getAsString();
+            }
+            if (id.isEmpty()) id = "_default";
+            activeOverlays.put(id, overlay);
+            activeOverlay = overlay;
         } catch (Exception e) {
             if (Minecraft.getInstance().player != null) {
                 Minecraft.getInstance().player.displayClientMessage(
@@ -1550,39 +1799,59 @@ public class SprauteScriptScreen extends Screen {
     }
 
     public static void closeOverlayIfActive() {
+        activeOverlays.clear();
         activeOverlay = null;
+        uiDummyCache.clear();
+    }
+
+    public static void closeOverlay(String overlayId) {
+        if (overlayId == null || overlayId.isEmpty()) {
+            closeOverlayIfActive();
+            return;
+        }
+        activeOverlays.remove(overlayId);
+        if (activeOverlays.isEmpty()) {
+            activeOverlay = null;
+        } else {
+            activeOverlay = activeOverlays.values().stream().reduce((a, b) -> b).orElse(null);
+        }
     }
 
     @SubscribeEvent
     public static void onRenderOverlay(RenderGuiOverlayEvent.Post event) {
         if (!event.getOverlay().id().equals(VanillaGuiOverlay.CHAT_PANEL.id())) return;
-        if (activeOverlay == null) return;
+        if (activeOverlays.isEmpty()) return;
         
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof SprauteScriptScreen) {
-            // Don't draw overlay if a SprauteScriptScreen is currently open, to avoid overlap
             return;
         }
 
-        // Setup dimensions for overlay
         int sw = mc.getWindow().getGuiScaledWidth();
         int sh = mc.getWindow().getGuiScaledHeight();
-        
-        // Default position logic (similar to init())
-        activeOverlay.left = (sw - activeOverlay.panelW) / 2;
-        activeOverlay.top = (sh - activeOverlay.panelH) / 2;
-        if (activeOverlay.root.has("x")) activeOverlay.left = readRootExtent(activeOverlay.root, "x", sw, activeOverlay.left);
-        if (activeOverlay.root.has("y")) activeOverlay.top = readRootExtent(activeOverlay.root, "y", sh, activeOverlay.top);
-
-        activeOverlay.processAnimations();
-
         PoseStack poseStack = event.getPoseStack();
-        if (activeOverlay.bgArgb != 0) {
-            GuiComponent.fill(poseStack, activeOverlay.left, activeOverlay.top, activeOverlay.left + activeOverlay.panelW, activeOverlay.top + activeOverlay.panelH, activeOverlay.bgArgb);
-        }
 
-        for (Widget w : activeOverlay.widgets) {
-            w.render(activeOverlay, poseStack, activeOverlay.left, activeOverlay.top, 0, 0, event.getPartialTick());
+        for (SprauteScriptScreen overlay : activeOverlays.values()) {
+            overlay.left = (sw - overlay.panelW) / 2;
+            overlay.top = (sh - overlay.panelH) / 2;
+            if (overlay.root.has("x")) {
+                int rawX = readRootExtent(overlay.root, "x", sw, overlay.left);
+                overlay.left = rawX < 0 ? sw + rawX - overlay.panelW : rawX;
+            }
+            if (overlay.root.has("y")) {
+                int rawY = readRootExtent(overlay.root, "y", sh, overlay.top);
+                overlay.top = rawY < 0 ? sh + rawY - overlay.panelH : rawY;
+            }
+
+            overlay.processAnimations();
+
+            if (overlay.bgArgb != 0) {
+                GuiComponent.fill(poseStack, overlay.left, overlay.top, overlay.left + overlay.panelW, overlay.top + overlay.panelH, overlay.bgArgb);
+            }
+
+            for (Widget w : overlay.widgets) {
+                w.render(overlay, poseStack, overlay.left, overlay.top, 0, 0, event.getPartialTick());
+            }
         }
     }
 }

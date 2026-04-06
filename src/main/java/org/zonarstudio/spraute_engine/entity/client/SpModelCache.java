@@ -45,7 +45,7 @@ public final class SpModelCache {
     }
 
     private static SpGeoModel loadModel(String modelPath) {
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(Spraute_engine.MODID, modelPath);
+        ResourceLocation loc = modelPath.contains(":") ? new ResourceLocation(modelPath) : new ResourceLocation(Spraute_engine.MODID, modelPath);
         try {
             Optional<Resource> res = Minecraft.getInstance().getResourceManager().getResource(loc);
             if (res.isPresent()) {

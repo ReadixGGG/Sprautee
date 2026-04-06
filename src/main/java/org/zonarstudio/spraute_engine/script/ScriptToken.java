@@ -13,6 +13,7 @@ public class ScriptToken {
         CREATE,       // create keyword
         NPC,          // npc keyword
         UI,           // ui keyword (create ui)
+        COMMAND,      // command keyword (create command)
         TRUE,         // true keyword
         FALSE,        // false keyword
         NULL,         // null literal
@@ -33,7 +34,7 @@ public class ScriptToken {
         TASK,         // task keyword (for await task)
         GLOBAL,       // global keyword
         WORLD,        // world keyword (persistent in world)
-        INCLUDE,      // include keyword
+        INCLUDE,      // include / import keyword
         TRY,          // try keyword
         CATCH,        // catch keyword
         ARROW,        // -> operator

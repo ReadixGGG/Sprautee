@@ -1,6 +1,6 @@
 {
   "name": "spraute-studio",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Редактор скриптов Spraute — оболочка в духе VS Code для папки Minecraft",
   "author": {
@@ -52,6 +52,7 @@
     ],
     "mac": {
       "icon": "assets/icon_spraute.icns",
+      "identity": null,
       "target": {
         "target": "default",
         "arch": [

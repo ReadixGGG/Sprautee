@@ -285,6 +285,13 @@ public class ExternalAssetPack extends AbstractPackResources {
             }
         }
         
+        if (resourcePath.startsWith("data/" + NAMESPACE + "/recipes/")) {
+            String recipeId = resourcePath.substring(("data/" + NAMESPACE + "/recipes/").length(), resourcePath.length() - 5);
+            if (org.zonarstudio.spraute_engine.registry.CustomBlockRegistry.CUSTOM_RECIPES_JSON.containsKey(recipeId)) {
+                return new java.io.ByteArrayInputStream(org.zonarstudio.spraute_engine.registry.CustomBlockRegistry.CUSTOM_RECIPES_JSON.get(recipeId).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        }
+        
         Path resolved = rootDir.resolve(resourcePath);
         if (Files.exists(resolved)) {
             return getFixedJsonStream(resolved);
@@ -350,6 +357,12 @@ public class ExternalAssetPack extends AbstractPackResources {
             org.zonarstudio.spraute_engine.registry.CustomParticleRegistry.CustomParticleDef def = org.zonarstudio.spraute_engine.registry.CustomParticleRegistry.PARTICLES.get(id);
             if (def != null) return true;
         }
+        
+        if (resourcePath.startsWith("data/" + NAMESPACE + "/recipes/")) {
+            String recipeId = resourcePath.substring(("data/" + NAMESPACE + "/recipes/").length(), resourcePath.length() - 5);
+            if (org.zonarstudio.spraute_engine.registry.CustomBlockRegistry.CUSTOM_RECIPES_JSON.containsKey(recipeId)) return true;
+        }
+
         Path resolved = rootDir.resolve(resourcePath);
         if (Files.exists(resolved)) return true;
         
@@ -418,6 +431,12 @@ public class ExternalAssetPack extends AbstractPackResources {
         if (type == PackType.CLIENT_RESOURCES && pathPrefix.startsWith("particles")) {
             for (org.zonarstudio.spraute_engine.registry.CustomParticleRegistry.CustomParticleDef def : org.zonarstudio.spraute_engine.registry.CustomParticleRegistry.PARTICLES.values()) {
                 list.add(new ResourceLocation(NAMESPACE, "particles/" + def.id + ".json"));
+            }
+        }
+        
+        if (type == PackType.SERVER_DATA && pathPrefix.startsWith("recipes")) {
+            for (String recipeId : org.zonarstudio.spraute_engine.registry.CustomBlockRegistry.CUSTOM_RECIPES_JSON.keySet()) {
+                list.add(new ResourceLocation(NAMESPACE, "recipes/" + recipeId + ".json"));
             }
         }
 

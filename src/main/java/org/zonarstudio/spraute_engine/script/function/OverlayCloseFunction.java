@@ -7,6 +7,7 @@ import net.minecraftforge.network.PacketDistributor;
 import org.zonarstudio.spraute_engine.network.CloseSprauteOverlayPacket;
 import org.zonarstudio.spraute_engine.network.ModNetwork;
 import org.zonarstudio.spraute_engine.script.ScriptContext;
+import org.zonarstudio.spraute_engine.ui.UiTemplate;
 
 import java.util.List;
 
@@ -19,12 +20,12 @@ public class OverlayCloseFunction implements ScriptFunction {
 
     @Override
     public int getArgCount() {
-        return 1;
+        return -1;
     }
 
     @Override
     public Class<?>[] getArgTypes() {
-        return new Class<?>[]{Object.class};
+        return new Class<?>[]{Object.class, Object.class};
     }
 
     @Override
@@ -33,8 +34,26 @@ public class OverlayCloseFunction implements ScriptFunction {
         Player player = resolvePlayer(args.get(0), source);
         if (!(player instanceof ServerPlayer sp)) return null;
 
-        ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp), new CloseSprauteOverlayPacket());
+        String overlayId = "";
+        if (args.size() >= 2) {
+            Object idArg = args.get(1);
+            if (idArg instanceof UiTemplate ut) {
+                overlayId = extractId(ut.getJson());
+            } else if (idArg != null) {
+                overlayId = String.valueOf(idArg);
+            }
+        }
+
+        ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp), new CloseSprauteOverlayPacket(overlayId));
         return null;
+    }
+
+    private static String extractId(String json) {
+        try {
+            com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+            if (root.has("id")) return root.get("id").getAsString();
+        } catch (Exception ignored) {}
+        return "";
     }
 
     private static Player resolvePlayer(Object target, CommandSourceStack source) {

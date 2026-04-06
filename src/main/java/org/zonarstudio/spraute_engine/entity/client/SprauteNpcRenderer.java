@@ -48,11 +48,13 @@ public class SprauteNpcRenderer extends EntityRenderer<SprauteNpcEntity> {
 
     @Override
     public ResourceLocation getTextureLocation(SprauteNpcEntity entity) {
-        return ResourceLocation.fromNamespaceAndPath(Spraute_engine.MODID, entity.getTexture());
+        String tex = entity.getTexture();
+        return tex.contains(":") ? new ResourceLocation(tex) : new ResourceLocation(Spraute_engine.MODID, tex);
     }
 
     @Override
     public boolean shouldShowName(SprauteNpcEntity entity) {
+        if (org.zonarstudio.spraute_engine.client.SprauteScriptScreen.hideEntityNameTag) return false;
         return entity.isCustomNameVisible() && entity.hasCustomName();
     }
 

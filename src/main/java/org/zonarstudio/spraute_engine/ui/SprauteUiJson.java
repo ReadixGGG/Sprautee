@@ -37,6 +37,11 @@ public final class SprauteUiJson {
         if (!root.has("widgets")) root.add("widgets", new JsonArray());
 
         JsonArray widgets = root.getAsJsonArray("widgets");
+        resolveEntitiesRecursive(widgets, level, source);
+        return root.toString();
+    }
+
+    private static void resolveEntitiesRecursive(JsonArray widgets, ServerLevel level, CommandSourceStack source) {
         for (JsonElement el : widgets) {
             if (!el.isJsonObject()) continue;
             JsonObject w = el.getAsJsonObject();
@@ -51,8 +56,10 @@ public final class SprauteUiJson {
                     }
                 }
             }
+            if (w.has("children") && w.get("children").isJsonArray()) {
+                resolveEntitiesRecursive(w.getAsJsonArray("children"), level, source);
+            }
         }
-        return root.toString();
     }
 
     private static Entity resolveEntity(ServerLevel level, CommandSourceStack source, String ref) {
@@ -126,6 +133,6 @@ public final class SprauteUiJson {
             String[] p = path.split(":", 2);
             return new ResourceLocation(p[0], p[1]);
         }
-        return new ResourceLocation("minecraft", path);
+        return new ResourceLocation(org.zonarstudio.spraute_engine.Spraute_engine.MODID, path);
     }
 }

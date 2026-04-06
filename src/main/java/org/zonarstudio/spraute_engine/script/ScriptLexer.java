@@ -296,6 +296,9 @@ public class ScriptLexer {
         if (value.equals("ui")) {
             return new ScriptToken(ScriptToken.TokenType.UI, value, line, start - lineStart);
         }
+        if (value.equals("command")) {
+            return new ScriptToken(ScriptToken.TokenType.COMMAND, value, line, start - lineStart);
+        }
         if (value.equals("true")) {
             return new ScriptToken(ScriptToken.TokenType.TRUE, value, line, start - lineStart);
         }
@@ -347,7 +350,7 @@ public class ScriptLexer {
         if (value.equals("world")) {
             return new ScriptToken(ScriptToken.TokenType.WORLD, value, line, start - lineStart);
         }
-        if (value.equals("include")) {
+        if (value.equals("include") || value.equals("import")) {
             return new ScriptToken(ScriptToken.TokenType.INCLUDE, value, line, start - lineStart);
         }
         if (value.equals("try")) {
@@ -355,9 +358,6 @@ public class ScriptLexer {
         }
         if (value.equals("catch")) {
             return new ScriptToken(ScriptToken.TokenType.CATCH, value, line, start - lineStart);
-        }
-        if (value.equals("include")) {
-            return new ScriptToken(ScriptToken.TokenType.INCLUDE, value, line, start - lineStart);
         }
         
         return new ScriptToken(ScriptToken.TokenType.IDENTIFIER, value, line, start - lineStart);
