@@ -84,6 +84,15 @@ public class ScriptExecutor {
         }
     }
 
+    public void onUiOverlapAction(net.minecraft.server.level.ServerPlayer player, String id1, String id2, boolean overlapping) {
+        for (ActiveScript script : activeScripts) {
+            script.onUiOverlapAction(player, id1, id2, overlapping);
+        }
+        for (ActiveScript script : scriptsToAdd) {
+            script.onUiOverlapAction(player, id1, id2, overlapping);
+        }
+    }
+
     public void onClickBlock(net.minecraft.world.entity.player.Player player, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.Block block, boolean isLeft) {
         for (ActiveScript script : activeScripts) {
             script.onClickBlock(player, pos, block, isLeft);
@@ -444,6 +453,8 @@ public class ScriptExecutor {
                 case PLACE_BLOCK -> "placeBlock";
                 case UI_INPUT -> "uiInput";
                 case CHAT -> "chat";
+                case UI_OVERLAP -> "uiOverlap";
+                case PLAYER_ACTION -> "action";
             };
         }
 
@@ -3235,7 +3246,7 @@ public class ScriptExecutor {
                             }
                             
                             if (sourceEntity != null) {
-                                living.hurt(net.minecraft.world.damagesource.DamageSource.entityAttack(sourceEntity), amount);
+                                living.hurt(new net.minecraft.world.damagesource.EntityDamageSource("generic", sourceEntity), amount);
                             } else {
                                 living.hurt(net.minecraft.world.damagesource.DamageSource.GENERIC, amount);
                             }
@@ -4509,10 +4520,20 @@ public class ScriptExecutor {
             boolean chatEventMet = false;
             String chatMatchedMessage = "";
             
+            UUID waitUiOverlapPlayerUuid = null;
+            String waitUiOverlapId1 = "";
+            String waitUiOverlapId2 = "";
+            boolean uiOverlapMet = false;
+            
             UUID waitOrbPickupPlayerUuid = null;
             String waitOrbPickupTexture = null;
             int waitOrbPickupTargetCount = 0;
             int waitOrbPickupCurrentCount = 0;
+
+            UUID waitPlayerActionPlayerUuid = null;
+            String waitPlayerActionType = "";
+            String waitPlayerActionTarget = null;
+            boolean playerActionMet = false;
 
             final Map<String, Object> taskLocals = new HashMap<>();
 

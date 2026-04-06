@@ -31,7 +31,7 @@ public class SprauteUiOverlapActionPacket {
         ctx.get().enqueueWork(() -> {
             net.minecraft.server.level.ServerPlayer sender = ctx.get().getSender();
             if (sender != null) {
-                ScriptManager manager = ScriptManager.getManager(sender.getServer());
+                ScriptManager manager = ScriptManager.getInstance();
                 if (manager != null) {
                     manager.onUiOverlapAction(sender, msg.id1, msg.id2, msg.overlapping);
                 }

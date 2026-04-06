@@ -84,11 +84,29 @@ public class SprauteNpcRenderer extends EntityRenderer<SprauteNpcEntity> {
 
             poseStack.pushPose();
 
+            boolean hasCustomDeathAnim = false;
+            if (!entity.isAlive() || entity.getHealth() <= 0) {
+                String deathAnimName = entity.getDeathAnim();
+                if (deathAnimName != null && !deathAnimName.isEmpty()) {
+                    org.zonarstudio.spraute_engine.core.parser.SpAnimationParser.AnimationSet set = SpAnimationCache.getOrLoad(entity.getAnimation());
+                    if (set != null && set.get(deathAnimName) != null) {
+                        hasCustomDeathAnim = true;
+                    }
+                }
+            }
+
             // Rotate model to face entity's body yaw direction.
             // The X-negate (Bedrock→MC mirror) is handled per-vertex inside SpGeoRenderer,
             // so PoseStack stays clean — no scale(-1,1,1) that would break normals/winding.
             float bodyYaw = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
             poseStack.mulPose(Vector3f.YP.rotationDegrees(180.0F - bodyYaw));
+
+            if (entity.deathTime > 0 && !hasCustomDeathAnim) {
+                float f = ((float)entity.deathTime + partialTick - 1.0F) / 20.0F * 1.6F;
+                f = Mth.sqrt(f);
+                if (f > 1.0F) f = 1.0F;
+                poseStack.mulPose(Vector3f.ZP.rotationDegrees(f * 90.0F));
+            }
 
             ResourceLocation textureLoc = getTextureLocation(entity);
             RenderType renderType = RenderType.entityTranslucent(textureLoc);

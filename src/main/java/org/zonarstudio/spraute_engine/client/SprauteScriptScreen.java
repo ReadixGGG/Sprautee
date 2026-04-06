@@ -993,19 +993,6 @@ public class SprauteScriptScreen extends Screen {
         top = (height - panelH) / 2;
     }
 
-    private Widget findWidgetById(String id) {
-        for (Widget w : widgets) {
-            if (id.equals(w.getId())) return w;
-            if (w instanceof ScrollW sw) {
-                for (Widget cw : sw.children) if (id.equals(cw.getId())) return cw;
-            }
-            if (w instanceof ClipW cw) {
-                for (Widget ccw : cw.children) if (id.equals(ccw.getId())) return ccw;
-            }
-        }
-        return null;
-    }
-
     private boolean checkOverlap(Widget w1, Widget w2, int ax0, int ay0) {
         float[] obb1 = w1.getOBB(this, ax0, ay0);
         float[] obb2 = w2.getOBB(this, ax0, ay0);
