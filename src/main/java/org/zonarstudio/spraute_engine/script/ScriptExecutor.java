@@ -2972,8 +2972,22 @@ public class ScriptExecutor {
                     case "damage" -> {
                         if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
                             float amount = args.isEmpty() ? 1f : ((Number) args.get(0)).floatValue();
-                            living.hurt(net.minecraft.world.damagesource.DamageSource.GENERIC, amount);
+                            
+                            // Check if source is provided (second argument)
+                            net.minecraft.world.entity.Entity sourceEntity = null;
+                            if (args.size() > 1 && args.get(1) instanceof net.minecraft.world.entity.Entity e) {
+                                sourceEntity = e;
+                            } else if (args.size() > 1 && args.get(1) instanceof String id) {
+                                sourceEntity = resolveEntity(id);
+                            }
+                            
+                            if (sourceEntity != null) {
+                                living.hurt(net.minecraft.world.damagesource.DamageSource.entityAttack(sourceEntity), amount);
+                            } else {
+                                living.hurt(net.minecraft.world.damagesource.DamageSource.GENERIC, amount);
+                            }
                         }
+                        return false;
                     }
                     case "teleport", "tp" -> {
                         if (args.size() >= 3) {
@@ -2986,6 +3000,7 @@ public class ScriptExecutor {
                                 entity.teleportTo(tx, ty, tz);
                             }
                         }
+                        return false;
                     }
                 }
             }

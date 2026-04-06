@@ -143,7 +143,7 @@ const sprauteFunctionsList = [
 
   // Игрок
   "raycast(${1:max_dist})",
-  "damage(${1:amount})",
+  "damage(${1:amount}, ${2:source_entity})",
   "teleport(${1:x}, ${2:y}, ${3:z})",
   
   // Разное
@@ -190,8 +190,8 @@ const sprauteFunctionCompletions = sprauteFunctionsList.map(sig => {
 const sprauteSnippets = [
   // Базовые конструкции
   snippetCompletion("if (${1:condition}) {\n  ${2}\n}", {label: "if", detail: "block", type: "keyword"}),
+  snippetCompletion("else if (${1:condition}) {\n  ${2}\n}", {label: "else if", detail: "block", type: "keyword"}),
   snippetCompletion("else {\n  ${1}\n}", {label: "else", detail: "block", type: "keyword"}),
-  snippetCompletion("elif (${1:condition}) {\n  ${2}\n}", {label: "elif", detail: "block", type: "keyword"}),
   snippetCompletion("while (${1:condition}) {\n  ${2}\n}", {label: "while", detail: "block", type: "keyword"}),
   snippetCompletion("for (${1:item} in ${2:list}) {\n  ${3}\n}", {label: "for", detail: "block", type: "keyword"}),
   snippetCompletion("fun ${1:name}(${2:args}) {\n  ${3}\n}", {label: "fun", detail: "definition", type: "keyword"}),
