@@ -2956,6 +2956,22 @@ public class ScriptExecutor {
                             npc.setHitbox(w, h);
                         }
                     }
+                    case "setflying" -> {
+                        if (!args.isEmpty()) {
+                            boolean flying = isTruthy(args.get(0));
+                            npc.setFlying(flying);
+                        }
+                    }
+                    case "setflyidleanim" -> {
+                        if (!args.isEmpty()) {
+                            npc.setFlyIdleAnim(String.valueOf(args.get(0)));
+                        }
+                    }
+                    case "setflywalkanim" -> {
+                        if (!args.isEmpty()) {
+                            npc.setFlyWalkAnim(String.valueOf(args.get(0)));
+                        }
+                    }
                     case "setadditiveweight" -> {
                         if (!args.isEmpty()) {
                             float w = ((Number) args.get(0)).floatValue();

@@ -257,8 +257,9 @@ public class SprauteNpcRenderer extends EntityRenderer<SprauteNpcEntity> {
      * Manual stopOverlayAnimation() calls do NOT suppress auto-anims; they will resume next frame.
      */
     private void syncAutoAnims(SprauteNpcEntity entity, float partialTick, InstanceEntry entry) {
-        String idleAnimName = entity.getIdleAnim();
-        String walkAnimName = entity.getWalkAnim();
+        boolean flying = entity.isFlying();
+        String idleAnimName = flying ? entity.getFlyIdleAnim() : entity.getIdleAnim();
+        String walkAnimName = flying ? entity.getFlyWalkAnim() : entity.getWalkAnim();
         boolean hasIdle = idleAnimName != null && !idleAnimName.isEmpty();
         boolean hasWalk = walkAnimName != null && !walkAnimName.isEmpty();
         if (!hasIdle && !hasWalk) return;
