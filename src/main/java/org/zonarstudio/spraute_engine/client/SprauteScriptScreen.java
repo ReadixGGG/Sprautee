@@ -60,6 +60,8 @@ public class SprauteScriptScreen extends Screen {
     private final List<Widget> widgets = new ArrayList<>();
     private int left;
     private int top;
+    public static final java.util.Set<String> monitorOverlaps = new java.util.HashSet<>();
+    public static final java.util.Map<String, Boolean> overlapState = new java.util.HashMap<>();
     private String activeInputId = null;
     /** When true, do not notify server (programmatic close / replace). */
     private boolean suppressClosePacket;
@@ -587,6 +589,32 @@ public class SprauteScriptScreen extends Screen {
         return new float[]{ax, ay};
     }
 
+    private static float[] parsePivot(JsonObject w) {
+        float px = 0.5f, py = 0.5f;
+        if (w.has("pivotX")) px = w.get("pivotX").getAsFloat();
+        if (w.has("pivotY")) py = w.get("pivotY").getAsFloat();
+        if (w.has("pivot")) {
+            JsonElement el = w.get("pivot");
+            if (el.isJsonPrimitive()) {
+                String a = el.getAsString().toLowerCase();
+                if (a.contains("right")) px = 1f;
+                else if (a.contains("center") || a.contains("middle")) px = 0.5f;
+                else if (a.contains("left")) px = 0f;
+                
+                if (a.contains("bottom")) py = 1f;
+                else if (a.contains("center") || a.contains("middle")) py = 0.5f;
+                else if (a.contains("top")) py = 0f;
+                
+                if (a.equals("center")) { px = 0.5f; py = 0.5f; }
+            } else if (el.isJsonArray()) {
+                JsonArray arr = el.getAsJsonArray();
+                if (arr.size() > 0) px = arr.get(0).getAsFloat();
+                if (arr.size() > 1) py = arr.get(1).getAsFloat();
+            }
+        }
+        return new float[]{px, py};
+    }
+
     private Widget parseOneWidget(JsonObject w, String tooltip, int pw, int ph) {
         String type = w.has("type") ? w.get("type").getAsString().toLowerCase() : "";
         int x = readCoord(w, "x", pw);
@@ -594,7 +622,11 @@ public class SprauteScriptScreen extends Screen {
         int ww = readCoord(w, "w", pw);
         int hh = readCoord(w, "h", ph);
         String wid = w.has("id") ? w.get("id").getAsString() : "";
-        return switch (type) {
+        
+        float rotation = w.has("rotation") ? w.get("rotation").getAsFloat() : 0f;
+        float[] pivot = parsePivot(w);
+        
+        Widget parsed = switch (type) {
             case "rect", "panel" -> new RectW(x, y, ww, hh, parseColor(w.has("color") ? w.get("color").getAsString() : "#FFFFFFFF"), tooltip, wid);
             case "gridBg" -> new GridBgW(x, y, ww, hh, 
                     w.has("gridType") ? w.get("gridType").getAsString() : "hv",
@@ -742,6 +774,81 @@ public class SprauteScriptScreen extends Screen {
             }
             default -> null;
         };
+        
+        if (parsed != null && rotation != 0f) {
+            float ox = w.has("w") || w.has("size") ? readCoord(w, w.has("size") ? "size" : "w", pw) : 0f;
+            float oy = w.has("h") || w.has("size") ? readCoord(w, w.has("size") ? "size" : "h", ph) : 0f;
+            if (ox == 0f && parsed instanceof TextW tw) {
+                // text width fallback
+                ox = 50f; // approximated for anchor
+                oy = 10f;
+            } else if (ox == 0f) {
+                ox = 50f;
+                oy = 50f;
+            }
+            parsed = new RotatedW(parsed, rotation, pivot[0], pivot[1], ox, oy, wid);
+        }
+        
+        return parsed;
+    }
+
+    private record RotatedW(Widget child, float rotation, float pivotX, float pivotY, float ow, float oh, String id) implements Widget {
+        @Override
+        public void render(SprauteScriptScreen screen, PoseStack poseStack, int ax0, int ay0, int mouseX, int mouseY, float partialTick) {
+            float px = ax0 + child.getX() + ow * pivotX;
+            float py = ay0 + child.getY() + oh * pivotY;
+            poseStack.pushPose();
+            poseStack.translate(px, py, 0);
+            poseStack.mulPose(com.mojang.math.Vector3f.ZP.rotationDegrees(rotation));
+            poseStack.translate(-px, -py, 0);
+            
+            double angle = Math.toRadians(-rotation);
+            float dx = mouseX - px;
+            float dy = mouseY - py;
+            int localMouseX = (int) (px + dx * Math.cos(angle) - dy * Math.sin(angle));
+            int localMouseY = (int) (py + dx * Math.sin(angle) + dy * Math.cos(angle));
+            
+            child.render(screen, poseStack, ax0, ay0, localMouseX, localMouseY, partialTick);
+            poseStack.popPose();
+        }
+
+        @Override
+        public String tooltip() {
+            return child.tooltip();
+        }
+
+        @Override
+        public boolean contains(SprauteScriptScreen screen, int ax0, int ay0, int mx, int my) {
+            float px = ax0 + child.getX() + ow * pivotX;
+            float py = ay0 + child.getY() + oh * pivotY;
+            double angle = Math.toRadians(-rotation);
+            float dx = mx - px;
+            float dy = my - py;
+            int localMouseX = (int) (px + dx * Math.cos(angle) - dy * Math.sin(angle));
+            int localMouseY = (int) (py + dx * Math.sin(angle) + dy * Math.cos(angle));
+            return child.contains(screen, ax0, ay0, localMouseX, localMouseY);
+        }
+        
+        @Override
+        public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) {
+            float[] childObb = child.getOBB(screen, ax0, ay0);
+            if (childObb == null) return null;
+            float px = ax0 + child.getX() + ow * pivotX;
+            float py = ay0 + child.getY() + oh * pivotY;
+            float cos = (float) Math.cos(Math.toRadians(rotation));
+            float sin = (float) Math.sin(Math.toRadians(rotation));
+            for (int i=0; i<8; i+=2) {
+                float cx = childObb[i] - px;
+                float cy = childObb[i+1] - py;
+                childObb[i] = px + cx*cos - cy*sin;
+                childObb[i+1] = py + cx*sin + cy*cos;
+            }
+            return childObb;
+        }
+        
+        @Override public int getX() { return child.getX(); }
+        @Override public int getY() { return child.getY(); }
+        @Override public String getId() { return id; }
     }
 
     private record WidgetEntry(int layer, int order, Widget widget) {}
@@ -886,6 +993,49 @@ public class SprauteScriptScreen extends Screen {
         top = (height - panelH) / 2;
     }
 
+    private Widget findWidgetById(String id) {
+        for (Widget w : widgets) {
+            if (id.equals(w.getId())) return w;
+            if (w instanceof ScrollW sw) {
+                for (Widget cw : sw.children) if (id.equals(cw.getId())) return cw;
+            }
+            if (w instanceof ClipW cw) {
+                for (Widget ccw : cw.children) if (id.equals(ccw.getId())) return ccw;
+            }
+        }
+        return null;
+    }
+
+    private boolean checkOverlap(Widget w1, Widget w2, int ax0, int ay0) {
+        float[] obb1 = w1.getOBB(this, ax0, ay0);
+        float[] obb2 = w2.getOBB(this, ax0, ay0);
+        if (obb1 == null || obb2 == null) return false;
+        
+        float[][] edges = new float[][] {
+            {obb1[2]-obb1[0], obb1[3]-obb1[1]}, {obb1[4]-obb1[2], obb1[5]-obb1[3]},
+            {obb2[2]-obb2[0], obb2[3]-obb2[1]}, {obb2[4]-obb2[2], obb2[5]-obb2[3]}
+        };
+        for (float[] edge : edges) {
+            if (edge[0] == 0 && edge[1] == 0) continue;
+            float nx = -edge[1];
+            float ny = edge[0];
+            float min1 = Float.MAX_VALUE, max1 = -Float.MAX_VALUE;
+            for (int i=0; i<8; i+=2) {
+                float p = obb1[i]*nx + obb1[i+1]*ny;
+                if (p < min1) min1 = p;
+                if (p > max1) max1 = p;
+            }
+            float min2 = Float.MAX_VALUE, max2 = -Float.MAX_VALUE;
+            for (int i=0; i<8; i+=2) {
+                float p = obb2[i]*nx + obb2[i+1]*ny;
+                if (p < min2) min2 = p;
+                if (p > max2) max2 = p;
+            }
+            if (max1 < min2 || max2 < min1) return false;
+        }
+        return true;
+    }
+
     @Override
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         processAnimations();
@@ -904,6 +1054,27 @@ public class SprauteScriptScreen extends Screen {
                 break;
             }
         }
+        
+        // Process monitored overlaps
+        if (!monitorOverlaps.isEmpty()) {
+            for (String pair : monitorOverlaps) {
+                String[] split = pair.split(":");
+                if (split.length == 2) {
+                    Widget w1 = findWidgetById(split[0]);
+                    Widget w2 = findWidgetById(split[1]);
+                    boolean overlaps = false;
+                    if (w1 != null && w2 != null) {
+                        overlaps = checkOverlap(w1, w2, ax0, ay0);
+                    }
+                    boolean prev = overlapState.getOrDefault(pair, false);
+                    if (overlaps != prev) {
+                        overlapState.put(pair, overlaps);
+                        ModNetwork.CHANNEL.sendToServer(new org.zonarstudio.spraute_engine.network.SprauteUiOverlapActionPacket(split[0], split[1], overlaps));
+                    }
+                }
+            }
+        }
+        
         super.render(poseStack, mouseX, mouseY, partialTick);
     }
 
@@ -1027,8 +1198,10 @@ public class SprauteScriptScreen extends Screen {
     @Override
     public void onClose() {
         if (!suppressClosePacket) {
-            ModNetwork.CHANNEL.sendToServer(new SprauteUiActionPacket("", true));
+            org.zonarstudio.spraute_engine.network.ModNetwork.CHANNEL.sendToServer(new org.zonarstudio.spraute_engine.network.SprauteUiActionPacket("", true));
         }
+        monitorOverlaps.clear();
+        overlapState.clear();
         suppressClosePacket = false;
         super.onClose();
     }
@@ -1053,9 +1226,21 @@ public class SprauteScriptScreen extends Screen {
         default boolean contains(SprauteScriptScreen screen, int ax0, int ay0, int mx, int my) {
             return false;
         }
+        
+        default int getX() { return 0; }
+        default int getY() { return 0; }
+        default String getId() { return ""; }
+        default float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return null; }
+        default float[] getBaseOBB(float px, float py, float pw, float ph) {
+            return new float[]{ px, py, px + pw, py, px + pw, py + ph, px, py + ph };
+        }
     }
 
     private record RectW(int x, int y, int w, int h, int color, String tooltip, String id) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
         @Override
         public String tooltip() {
             return tooltip;
@@ -1075,6 +1260,10 @@ public class SprauteScriptScreen extends Screen {
     }
 
     private record GridBgW(int x, int y, int w, int h, String gridType, int cellSize, int thickness, int color, String tooltip, String id) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
         @Override
         public String tooltip() { return tooltip; }
 
@@ -1107,6 +1296,10 @@ public class SprauteScriptScreen extends Screen {
     }
 
     private record ImageW(int x, int y, int w, int h, String texture, String tooltip, String id, int sliceBorders, int sliceScale) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
         @Override
         public String tooltip() {
             return tooltip;
@@ -1175,6 +1368,19 @@ public class SprauteScriptScreen extends Screen {
     }
 
     private record TextW(int x, int y, String text, int color, float scale, String tooltip, String id, int wrapWidth, String align, int maxLines, int maxChars, float anchorX, float anchorY) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) {
+            float[] bounds = getBounds(screen);
+            float tw = bounds[0];
+            float th = bounds[1];
+            float offsetX = -tw * anchorX;
+            float offsetY = -th * anchorY;
+            float lx = ax0 + x + offsetX;
+            float ly = ay0 + y + offsetY;
+            return getBaseOBB(lx, ly, tw, th);
+        }
         @Override
         public String tooltip() {
             return tooltip;
@@ -1257,6 +1463,10 @@ public class SprauteScriptScreen extends Screen {
     }
 
     private record InputW(String id, int x, int y, int w, int h, String text, String placeholder, int color, int bgColor, int outlineColor, float scale, String tooltip, int maxChars, String type) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
         @Override
         public String tooltip() {
             return tooltip;
@@ -1302,6 +1512,10 @@ public class SprauteScriptScreen extends Screen {
 
     private record ButtonW(String id, int x, int y, int w, int h, String label, String subLabel, int color, int hoverColor, String texture, String tooltip,
                            int labelWrap, float labelScale, float subScale) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
         @Override
         public String tooltip() {
             return tooltip;
@@ -1377,6 +1591,11 @@ public class SprauteScriptScreen extends Screen {
             this.tooltip = tooltip; this.id = id;
         }
 
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
+
         @Override
         public String tooltip() { return tooltip; }
 
@@ -1421,6 +1640,11 @@ public class SprauteScriptScreen extends Screen {
             this.showBar = showBar; this.autoBar = autoBar;
         }
 
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, h); }
+
         @Override
         public String tooltip() { return tooltip; }
 
@@ -1462,6 +1686,10 @@ public class SprauteScriptScreen extends Screen {
     }
 
     private record DividerW(int x, int y, int w, int color, String id) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, w, 1); }
         @Override
         public void render(SprauteScriptScreen screen, PoseStack poseStack, int ax0, int ay0, int mouseX, int mouseY, float partialTick) {
             GuiComponent.fill(poseStack, ax0 + x, ay0 + y, ax0 + x + w, ay0 + y + 1, color);
@@ -1469,6 +1697,10 @@ public class SprauteScriptScreen extends Screen {
     }
 
     private record ItemW(int x, int y, int size, String itemId, String tooltip, String id) implements Widget {
+        @Override public int getX() { return x; }
+        @Override public int getY() { return y; }
+        @Override public String getId() { return id; }
+        @Override public float[] getOBB(SprauteScriptScreen screen, int ax0, int ay0) { return getBaseOBB(ax0 + x, ay0 + y, size, size); }
         @Override
         public String tooltip() { return tooltip; }
 

@@ -62,5 +62,13 @@ public class ModNetwork {
                 SyncLoadScreenPacket::encode,
                 SyncLoadScreenPacket::decode,
                 SyncLoadScreenPacket::handle);
+        CHANNEL.registerMessage(id++, SprauteUiMonitorOverlapPacket.class,
+                SprauteUiMonitorOverlapPacket::encode,
+                SprauteUiMonitorOverlapPacket::decode,
+                SprauteUiMonitorOverlapPacket::handle);
+        CHANNEL.registerMessage(id++, SprauteUiOverlapActionPacket.class,
+                SprauteUiOverlapActionPacket::encode,
+                SprauteUiOverlapActionPacket::decode,
+                SprauteUiOverlapActionPacket::handle);
     }
 }

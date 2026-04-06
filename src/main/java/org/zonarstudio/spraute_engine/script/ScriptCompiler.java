@@ -123,6 +123,9 @@ public class ScriptCompiler {
             } else if (func.equals("chat")) {
                 if (args.size() < 2) throw new ScriptException("await chat(player, message, [ignore_case], [ignore_punctuation]) requires player and message");
                 instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_CHAT, args));
+            } else if (func.equals("uiTouch") || func.equals("uiOverlap")) {
+                if (args.size() < 3) throw new ScriptException("await uiTouch(player, id1, id2) requires player, id1, id2");
+                instructions.add(new CompiledScript.Instruction(node.getLine(), node.getColumn(), CompiledScript.Opcode.AWAIT_UI_TOUCH, args.get(0), args.get(1), args.get(2)));
             } else {
                 throw new ScriptException("Unknown await trigger: " + func);
             }

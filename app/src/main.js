@@ -68,6 +68,7 @@ const sprauteProperties = [
   // UI параметры
   "size", "background", "bg", "canClose",
   "anchor", "anchorX", "anchorY", "scale", "crop", "feetCrop",
+  "rotation", "pivot", "pivotX", "pivotY",
   "color", "hover", "bgColor", "outlineColor",
   "wrap", "align", "tooltip", "layer", "order", "id",
   "maxLines", "maxChars", "inputType", "placeholder",
@@ -112,6 +113,7 @@ const sprauteFunctionsList = [
   "overlayClose(${1:player})",
   "uiUpdate(${1:player}, ${2:widget_id}, ${3:field}, ${4:value})",
   "uiAnimate(${1:player}, ${2:widget_id}, ${3:field}, ${4:value}, ${5:duration})",
+  "uiTouch(${1:player}, ${2:id1}, ${3:id2})",
 
   // Частицы
   "particleSpawn(${1:type}, ${2:x}, ${3:y}, ${4:z}, ${5:count}, ${6:dx}, ${7:dy}, ${8:dz}, ${9:speed})",

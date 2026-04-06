@@ -213,6 +213,10 @@ public class ScriptManager {
         executor.onUiAction(player, widgetId, closed);
     }
 
+    public void onUiOverlapAction(net.minecraft.server.level.ServerPlayer player, String id1, String id2, boolean overlapping) {
+        executor.onUiOverlapAction(player, id1, id2, overlapping);
+    }
+
     public void onClickBlock(net.minecraft.world.entity.player.Player player, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.Block block, boolean isLeft) {
         executor.onClickBlock(player, pos, block, isLeft);
     }

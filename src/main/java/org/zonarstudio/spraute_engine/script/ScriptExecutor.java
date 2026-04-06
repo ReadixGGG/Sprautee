@@ -314,6 +314,12 @@ public class ScriptExecutor {
         private boolean blockEventMet = false;
         private String uiInputWidgetId = "";
         private String uiInputText = "";
+
+        // UI overlap
+        private UUID waitUiOverlapPlayerUuid = null;
+        private String waitUiOverlapId1 = "";
+        private String waitUiOverlapId2 = "";
+        private boolean uiOverlapMet = false;
         
         private UUID waitChatPlayerUuid = null;
         private List<String> waitChatMessages = null;
@@ -1431,6 +1437,65 @@ public class ScriptExecutor {
             }
         }
 
+        public void onUiOverlapAction(net.minecraft.server.level.ServerPlayer player, String id1, String id2, boolean overlapping) {
+            if (!overlapping) return; // For now, only trigger when they start touching
+
+            // Handle main script await
+            if (waitType == WaitType.UI_OVERLAP && waitUiOverlapPlayerUuid != null && waitUiOverlapPlayerUuid.equals(player.getUUID())) {
+                if ((waitUiOverlapId1.equals(id1) && waitUiOverlapId2.equals(id2)) ||
+                    (waitUiOverlapId1.equals(id2) && waitUiOverlapId2.equals(id1))) {
+                    uiOverlapMet = true;
+                    org.zonarstudio.spraute_engine.network.ModNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                        new org.zonarstudio.spraute_engine.network.SprauteUiMonitorOverlapPacket(id1, id2, false)
+                    );
+                }
+            }
+
+            // Handle async tasks await
+            for (AsyncTask t : asyncTasks.values()) {
+                if (t.waitType == WaitType.UI_OVERLAP && t.waitUiOverlapPlayerUuid != null && t.waitUiOverlapPlayerUuid.equals(player.getUUID())) {
+                    if ((t.waitUiOverlapId1.equals(id1) && t.waitUiOverlapId2.equals(id2)) ||
+                        (t.waitUiOverlapId1.equals(id2) && t.waitUiOverlapId2.equals(id1))) {
+                        t.uiOverlapMet = true;
+                        org.zonarstudio.spraute_engine.network.ModNetwork.CHANNEL.send(
+                            net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                            new org.zonarstudio.spraute_engine.network.SprauteUiMonitorOverlapPacket(id1, id2, false)
+                        );
+                    }
+                }
+            }
+
+            // Handle "on uiTouch" events
+            for (var entry : eventHandlers.entrySet()) {
+                EventHandler handler = entry.getValue();
+                boolean isTouch = handler.eventName.equalsIgnoreCase("uiTouch") || handler.eventName.equalsIgnoreCase("uiOverlap");
+                if (!handler.active || !isTouch) continue;
+
+                if (handler.eventArgs.size() >= 3) {
+                    net.minecraft.world.entity.Entity targetPlayer = resolveEntity(handler.eventArgs.get(0));
+                    if (targetPlayer == null || !player.getUUID().equals(targetPlayer.getUUID())) continue;
+
+                    String expId1 = String.valueOf(handler.eventArgs.get(1));
+                    String expId2 = String.valueOf(handler.eventArgs.get(2));
+
+                    if ((expId1.equals(id1) && expId2.equals(id2)) || (expId1.equals(id2) && expId2.equals(id1))) {
+                        Object prevPlayer = variables.get("_event_player");
+                        variables.put("_event_player", player);
+                        try {
+                            executeInstructionBlock(handler.bodyInstructions);
+                        } catch (ReturnException e) {
+                            handler.active = false;
+                        } catch (Exception e) {
+                            LOGGER.error("[Script: {}] uiTouch handler '{}' error: {}", script.getName(), entry.getKey(), e.getMessage());
+                        }
+                        if (prevPlayer != null) variables.put("_event_player", prevPlayer);
+                        else variables.remove("_event_player");
+                    }
+                }
+            }
+        }
+
         public void onUiAction(net.minecraft.server.level.ServerPlayer player, String widgetId, boolean closed) {
             String wid = widgetId != null ? widgetId : "";
             
@@ -2521,6 +2586,26 @@ public class ScriptExecutor {
                         waitUiPlayerUuid = sp.getUUID();
                         uiInputWidgetId = wNode != null ? String.valueOf(evaluateExpression(wNode)) : null;
                         waitType = WaitType.UI_INPUT;
+                        return true;
+                    }
+                }
+                case AWAIT_UI_TOUCH -> {
+                    ScriptNode pNode = (ScriptNode) instruction.getArg(0);
+                    ScriptNode id1Node = (ScriptNode) instruction.getArg(1);
+                    ScriptNode id2Node = (ScriptNode) instruction.getArg(2);
+                    net.minecraft.server.level.ServerPlayer sp = resolveServerPlayer(evaluateExpression(pNode));
+                    if (sp != null) {
+                        waitUiOverlapPlayerUuid = sp.getUUID();
+                        waitUiOverlapId1 = String.valueOf(evaluateExpression(id1Node));
+                        waitUiOverlapId2 = String.valueOf(evaluateExpression(id2Node));
+                        uiOverlapMet = false;
+                        
+                        org.zonarstudio.spraute_engine.network.ModNetwork.CHANNEL.send(
+                            net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
+                            new org.zonarstudio.spraute_engine.network.SprauteUiMonitorOverlapPacket(waitUiOverlapId1, waitUiOverlapId2, true)
+                        );
+                        
+                        waitType = WaitType.UI_OVERLAP;
                         return true;
                     }
                 }
@@ -4276,7 +4361,7 @@ public class ScriptExecutor {
 
         private enum WaitType {
         NONE, TIME, INTERACT, NEXT, KEYBIND, DEATH, UI_CLICK, UI_CLOSE, MOVE_TO, FOLLOW, PICKUP, ORB_PICKUP, WAIT_TASK,
-        POSITION, INVENTORY, CLICK_BLOCK, BREAK_BLOCK, PLACE_BLOCK, UI_INPUT, CHAT
+        POSITION, INVENTORY, CLICK_BLOCK, BREAK_BLOCK, PLACE_BLOCK, UI_INPUT, CHAT, UI_OVERLAP
     }
 
     public static class PlayerSavedDataMap extends java.util.AbstractMap<String, Object> {
