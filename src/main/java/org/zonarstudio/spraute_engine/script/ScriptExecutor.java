@@ -2972,6 +2972,27 @@ public class ScriptExecutor {
                             npc.setFlyWalkAnim(String.valueOf(args.get(0)));
                         }
                     }
+                    case "setswimming" -> {
+                        if (!args.isEmpty()) {
+                            boolean swimming = isTruthy(args.get(0));
+                            npc.setSwimmingScript(swimming);
+                        }
+                    }
+                    case "setswimidleanim" -> {
+                        if (!args.isEmpty()) {
+                            npc.setSwimIdleAnim(String.valueOf(args.get(0)));
+                        }
+                    }
+                    case "setswimwalkanim" -> {
+                        if (!args.isEmpty()) {
+                            npc.setSwimWalkAnim(String.valueOf(args.get(0)));
+                        }
+                    }
+                    case "setdeathanim" -> {
+                        if (!args.isEmpty()) {
+                            npc.setDeathAnim(String.valueOf(args.get(0)));
+                        }
+                    }
                     case "setadditiveweight" -> {
                         if (!args.isEmpty()) {
                             float w = ((Number) args.get(0)).floatValue();

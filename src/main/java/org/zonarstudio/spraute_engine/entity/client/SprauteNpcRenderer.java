@@ -258,14 +258,54 @@ public class SprauteNpcRenderer extends EntityRenderer<SprauteNpcEntity> {
      */
     private void syncAutoAnims(SprauteNpcEntity entity, float partialTick, InstanceEntry entry) {
         boolean flying = entity.isFlying();
-        String idleAnimName = flying ? entity.getFlyIdleAnim() : entity.getIdleAnim();
-        String walkAnimName = flying ? entity.getFlyWalkAnim() : entity.getWalkAnim();
+        boolean swimming = entity.isSwimmingScript() || entity.isInWater();
+        boolean dead = !entity.isAlive() || entity.getHealth() <= 0;
+        
+        String idleAnimName = flying ? entity.getFlyIdleAnim() : (swimming ? entity.getSwimIdleAnim() : entity.getIdleAnim());
+        String walkAnimName = flying ? entity.getFlyWalkAnim() : (swimming ? entity.getSwimWalkAnim() : entity.getWalkAnim());
+        String deathAnimName = entity.getDeathAnim();
+
+        float now = entity.tickCount + partialTick;
+
+        if (dead) {
+            if (deathAnimName != null && !deathAnimName.isEmpty()) {
+                OverlayLayerState deathLayer = entry.layers.get("__auto_death__");
+                if (deathLayer == null) {
+                    deathLayer = new OverlayLayerState();
+                    deathLayer.clipName = deathAnimName;
+                    deathLayer.mode = SprauteNpcEntity.OVERLAY_FREEZE;
+                    deathLayer.startTick = now;
+                    deathLayer.fadeInStartTick = now;
+                    deathLayer.fadeOutStartTick = -1f;
+                    entry.layers.put("__auto_death__", deathLayer);
+                } else if (deathLayer.fadeOutStartTick >= 0f) {
+                    deathLayer.fadeOutStartTick = -1f;
+                }
+            }
+            
+            // Fade out idle and walk
+            if (entry.layers.containsKey(AUTO_IDLE_KEY)) {
+                OverlayLayerState idleLayer = entry.layers.get(AUTO_IDLE_KEY);
+                if (idleLayer.fadeOutStartTick < 0f) idleLayer.fadeOutStartTick = now;
+            }
+            if (entry.layers.containsKey(AUTO_WALK_KEY)) {
+                OverlayLayerState walkLayer = entry.layers.get(AUTO_WALK_KEY);
+                if (walkLayer.fadeOutStartTick < 0f) walkLayer.fadeOutStartTick = now;
+            }
+            return;
+        } else {
+            // If respawned, fade out death anim
+            if (entry.layers.containsKey("__auto_death__")) {
+                OverlayLayerState deathLayer = entry.layers.get("__auto_death__");
+                if (deathLayer.fadeOutStartTick < 0f) deathLayer.fadeOutStartTick = now;
+            }
+        }
+
         boolean hasIdle = idleAnimName != null && !idleAnimName.isEmpty();
         boolean hasWalk = walkAnimName != null && !walkAnimName.isEmpty();
         if (!hasIdle && !hasWalk) return;
 
         boolean moving = entity.isMovingSynced();
-        float now = entity.tickCount + partialTick;
 
         if (hasIdle) {
             OverlayLayerState idleLayer = entry.layers.get(AUTO_IDLE_KEY);

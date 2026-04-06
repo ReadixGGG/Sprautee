@@ -67,6 +67,14 @@ public class SprauteNpcEntity extends PathfinderMob {
         net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.STRING);
     private static final net.minecraft.network.syncher.EntityDataAccessor<String> FLY_WALK_ANIM =
         net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.STRING);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> IS_SWIMMING_SCRIPT =
+        net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<String> SWIM_IDLE_ANIM =
+        net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.STRING);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<String> SWIM_WALK_ANIM =
+        net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.STRING);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<String> DEATH_ANIM =
+        net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.STRING);
     /** Synced moving state so client can play walk/idle without server round-trip lag. */
     private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> IS_MOVING_SYNCED =
         net.minecraft.network.syncher.SynchedEntityData.defineId(SprauteNpcEntity.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
@@ -150,6 +158,10 @@ public class SprauteNpcEntity extends PathfinderMob {
         this.entityData.define(IS_FLYING, false);
         this.entityData.define(FLY_IDLE_ANIM, "fly_idle");
         this.entityData.define(FLY_WALK_ANIM, "fly");
+        this.entityData.define(IS_SWIMMING_SCRIPT, false);
+        this.entityData.define(SWIM_IDLE_ANIM, "swim_idle");
+        this.entityData.define(SWIM_WALK_ANIM, "swim");
+        this.entityData.define(DEATH_ANIM, "death");
         this.entityData.define(IS_MOVING_SYNCED, false);
         this.entityData.define(HAS_COLLISION, true);
         this.entityData.define(HITBOX_WIDTH, 0.6f);
@@ -265,6 +277,27 @@ public class SprauteNpcEntity extends PathfinderMob {
     
     public String getFlyWalkAnim() { return this.entityData.get(FLY_WALK_ANIM); }
     public void setFlyWalkAnim(String name) { this.entityData.set(FLY_WALK_ANIM, name != null ? name : ""); }
+
+    public boolean isSwimmingScript() { return this.entityData.get(IS_SWIMMING_SCRIPT); }
+    public void setSwimmingScript(boolean swimming) {
+        this.entityData.set(IS_SWIMMING_SCRIPT, swimming);
+        if (swimming) {
+            this.moveControl = new net.minecraft.world.entity.ai.control.SmoothSwimmingMoveControl(this, 85, 10, 0.02F, 0.1F, true);
+            this.navigation = new net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation(this, this.level);
+        } else if (!isFlying()) {
+            this.moveControl = new net.minecraft.world.entity.ai.control.MoveControl(this);
+            this.navigation = new net.minecraft.world.entity.ai.navigation.GroundPathNavigation(this, this.level);
+        }
+    }
+
+    public String getSwimIdleAnim() { return this.entityData.get(SWIM_IDLE_ANIM); }
+    public void setSwimIdleAnim(String name) { this.entityData.set(SWIM_IDLE_ANIM, name != null ? name : ""); }
+    
+    public String getSwimWalkAnim() { return this.entityData.get(SWIM_WALK_ANIM); }
+    public void setSwimWalkAnim(String name) { this.entityData.set(SWIM_WALK_ANIM, name != null ? name : ""); }
+
+    public String getDeathAnim() { return this.entityData.get(DEATH_ANIM); }
+    public void setDeathAnim(String name) { this.entityData.set(DEATH_ANIM, name != null ? name : ""); }
 
     // ========== Collision ==========
     public void setHasCollision(boolean col) { this.entityData.set(HAS_COLLISION, col); }
@@ -698,6 +731,10 @@ public class SprauteNpcEntity extends PathfinderMob {
         c.putBoolean("IsFlying", isFlying());
         c.putString("FlyIdleAnim", getFlyIdleAnim());
         c.putString("FlyWalkAnim", getFlyWalkAnim());
+        c.putBoolean("IsSwimming", isSwimmingScript());
+        c.putString("SwimIdleAnim", getSwimIdleAnim());
+        c.putString("SwimWalkAnim", getSwimWalkAnim());
+        c.putString("DeathAnim", getDeathAnim());
         
         if (!customDrops.isEmpty()) {
             net.minecraft.nbt.ListTag dropsList = new net.minecraft.nbt.ListTag();
@@ -726,6 +763,10 @@ public class SprauteNpcEntity extends PathfinderMob {
         if (c.contains("IsFlying")) setFlying(c.getBoolean("IsFlying"));
         if (c.contains("FlyIdleAnim")) setFlyIdleAnim(c.getString("FlyIdleAnim"));
         if (c.contains("FlyWalkAnim")) setFlyWalkAnim(c.getString("FlyWalkAnim"));
+        if (c.contains("IsSwimming")) setSwimmingScript(c.getBoolean("IsSwimming"));
+        if (c.contains("SwimIdleAnim")) setSwimIdleAnim(c.getString("SwimIdleAnim"));
+        if (c.contains("SwimWalkAnim")) setSwimWalkAnim(c.getString("SwimWalkAnim"));
+        if (c.contains("DeathAnim")) setDeathAnim(c.getString("DeathAnim"));
         
         customDrops.clear();
         if (c.contains("CustomDrops", 9)) {
