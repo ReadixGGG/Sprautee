@@ -52,6 +52,7 @@ public class CustomBlockRegistry {
         public float hardness = 1.5f;
         public String dropItem;
         public String tab;
+        public boolean directional = true;
         
         public boolean isOre = false;
         public int oreVeinSize = 8;
@@ -107,6 +108,7 @@ public class CustomBlockRegistry {
         Pattern textureWestPattern = Pattern.compile("texture_west\\s*=\\s*\"([^\"]+)\"");
         Pattern textureEastPattern = Pattern.compile("texture_east\\s*=\\s*\"([^\"]+)\"");
         Pattern collisionPattern = Pattern.compile("collision\\s*=\\s*(true|false)");
+        Pattern directionalPattern = Pattern.compile("directional\\s*=\\s*(true|false)");
         Pattern maxStackPattern = Pattern.compile("maxStackSize\\s*=\\s*(\\d+)");
         Pattern lightPattern = Pattern.compile("light\\s*=\\s*(\\d+)");
         Pattern hardnessPattern = Pattern.compile("hardness\\s*=\\s*([0-9.]+)");
@@ -254,6 +256,9 @@ public class CustomBlockRegistry {
                         Matcher hardM = hardnessPattern.matcher(body);
                         if (hardM.find()) def.hardness = Float.parseFloat(hardM.group(1));
                         
+                        Matcher dirM = directionalPattern.matcher(body);
+                        if (dirM.find()) def.directional = Boolean.parseBoolean(dirM.group(1));
+
                         Matcher dropM = dropPattern.matcher(body);
                         if (dropM.find()) def.dropItem = dropM.group(1);
                         
@@ -326,7 +331,7 @@ public class CustomBlockRegistry {
                 
                 if (!def.hasCollision) props.noCollission();
                 
-                Block block = new CustomGeoBlock(props, def.model, def.texture, def.dropItem);
+                Block block = new CustomGeoBlock(props, def.model, def.texture, def.dropItem, def.directional);
                 REGISTERED_BLOCKS.add(block);
                 event.register(Registry.BLOCK_REGISTRY, new ResourceLocation(Spraute_engine.MODID, def.id), () -> block);
             }

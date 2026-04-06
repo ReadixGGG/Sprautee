@@ -62,7 +62,7 @@ const sprauteProperties = [
   
   // Параметры кастомных блоков
   "texture_up", "texture_down", "texture_north", "texture_south", "texture_west", "texture_east",
-  "light", "hardness", "drop", "maxStackSize",
+  "light", "hardness", "drop", "maxStackSize", "directional",
   "is_ore", "ore_vein", "ore_min", "ore_max", "ore_chances",
   
   // UI параметры

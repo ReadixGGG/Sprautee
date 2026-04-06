@@ -20,23 +20,37 @@ public class CustomGeoBlock extends Block implements EntityBlock {
     private final String modelPath;
     private final String texturePath;
     private final String dropItem;
+    private final boolean directional;
 
-    public CustomGeoBlock(Properties properties, String modelPath, String texturePath, String dropItem) {
+    public CustomGeoBlock(Properties properties, String modelPath, String texturePath, String dropItem, boolean directional) {
         super(properties);
         this.modelPath = modelPath;
         this.texturePath = texturePath;
         this.dropItem = dropItem;
-        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+        this.directional = directional;
+        
+        if (this.directional) {
+            this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+        }
+    }
+
+    public CustomGeoBlock(Properties properties, String modelPath, String texturePath, String dropItem) {
+        this(properties, modelPath, texturePath, dropItem, true);
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        // We always add FACING property because block properties cannot be added dynamically per-instance
+        // in Minecraft 1.19.2 without creating different Block classes.
         builder.add(FACING);
     }
 
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
+        if (!directional) {
+            return this.defaultBlockState();
+        }
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
