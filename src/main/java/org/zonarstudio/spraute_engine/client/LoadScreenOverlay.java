@@ -59,19 +59,28 @@ public class LoadScreenOverlay {
         GuiComponent.fill(poseStack, 0, 0, width, height, darkColor);
 
         if (logoAlpha > 0) {
-            String text = "Spraute";
-            Font font = mc.font;
-            int textWidth = font.width(text);
+            com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionTexShader);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, logoAlpha);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(0, new net.minecraft.resources.ResourceLocation(Spraute_engine.MODID, "textures/gui/logo.png"));
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+
+            int texWidth = 1356;
+            int texHeight = 470;
             
+            // Задаем ширину логотипа на экране (например, 250 пикселей)
+            int logoWidth = 250;
+            int logoHeight = (int) (logoWidth * ((float) texHeight / texWidth));
+            
+            int x = (width - logoWidth) / 2;
+            int y = (height - logoHeight) / 2;
+
             poseStack.pushPose();
-            float scale = 4.0f;
-            poseStack.translate(width / 2.0f, height / 2.0f, 0);
-            poseStack.scale(scale, scale, 1.0f);
-            
-            int logoColor = ((int) (logoAlpha * 255) << 24) | 0xFFFFFF;
-            font.drawShadow(poseStack, text, -textWidth / 2.0f, -font.lineHeight / 2.0f, logoColor);
-            
+            GuiComponent.blit(poseStack, x, y, logoWidth, logoHeight, 0, 0, texWidth, texHeight, texWidth, texHeight);
             poseStack.popPose();
+            
+            com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
     }
 }
