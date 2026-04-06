@@ -1713,6 +1713,56 @@ document.addEventListener('keydown', async (e) => {
     return;
   }
   
+  // Если визуальный режим активен, перехватываем горячие клавиши для блоков
+  if (isVisualMode && blocklyWorkspace && (e.target.closest('#blockly-mount') || e.target.closest('.blocklyWidgetDiv'))) {
+    const selected = Blockly.common.getSelected();
+    
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (selected && selected.isDeletable()) {
+        selected.dispose();
+        e.preventDefault();
+      }
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'c' || e.key === 'с' || e.code === 'KeyC')) {
+      if (selected && selected.isDeletable()) {
+        Blockly.clipboard.copy(selected);
+        e.preventDefault();
+      }
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'x' || e.key === 'ч' || e.code === 'KeyX')) {
+      if (selected && selected.isDeletable()) {
+        Blockly.clipboard.copy(selected);
+        selected.dispose();
+        e.preventDefault();
+      }
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'v' || e.key === 'м' || e.code === 'KeyV')) {
+      const pasted = Blockly.clipboard.paste();
+      if (pasted) {
+        e.preventDefault();
+      }
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'z' || e.key === 'я' || e.code === 'KeyZ')) {
+      blocklyWorkspace.undo(e.shiftKey);
+      e.preventDefault();
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || e.key === 'н' || e.code === 'KeyY')) {
+      blocklyWorkspace.undo(true);
+      e.preventDefault();
+      return;
+    }
+  }
+
   if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'с' || e.code === 'KeyC')) {
     if (selectedItemPath) {
       clipboardPath = selectedItemPath;

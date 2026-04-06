@@ -74,3 +74,41 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Стили для контекстного меню Blockly */
+.blocklyWidgetDiv .blocklyMenu {
+  background: var(--color-surface-bright) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  padding: 4px 0 !important;
+}
+
+.blocklyWidgetDiv .blocklyMenuItem {
+  color: var(--color-on-surface) !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.875rem !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s, color 0.15s !important;
+}
+
+.blocklyWidgetDiv .blocklyMenuItemHover, 
+.blocklyWidgetDiv .blocklyMenuItem:hover {
+  background: rgba(168, 85, 247, 0.2) !important; /* bg-primary/20 but using secondary purplish color */
+  color: var(--color-secondary) !important;
+}
+
+.blocklyWidgetDiv .blocklyMenuItemContent {
+  color: inherit !important;
+}
+
+.blocklyWidgetDiv .blocklyMenuItemDisabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.blocklyWidgetDiv .blocklyMenuItemDisabled:hover {
+  background: transparent !important;
+  color: var(--color-on-surface) !important;
+}
