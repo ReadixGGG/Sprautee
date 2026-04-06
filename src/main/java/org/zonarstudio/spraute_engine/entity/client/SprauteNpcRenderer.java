@@ -118,7 +118,7 @@ public class SprauteNpcRenderer extends EntityRenderer<SprauteNpcEntity> {
             );
 
             SpGeoRenderer.render(instance, poseStack, consumer, packedLight, overlay,
-                                 1f, 1f, 1f, 1f);
+                                 1f, 1f, 1f, 1f, entity.uiRenderBones);
 
             SprauteNpcItemLayer.render(instance, entity, poseStack, bufferSource, packedLight);
 

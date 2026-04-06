@@ -73,7 +73,7 @@ const sprauteProperties = [
   "wrap", "align", "tooltip", "layer", "order", "id",
   "maxLines", "maxChars", "inputType", "placeholder",
   "contentH", "scrollbar",
-  "gridType", "cellSize", "thickness",
+  "gridType", "cellSize", "thickness", "renderBones",
   
   // Остальное
   "text", "button", "slot", "image", "rect", "progress"

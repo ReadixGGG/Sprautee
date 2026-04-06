@@ -23,12 +23,15 @@ public final class SpGeoRenderer {
 
     public static void render(SpModelInstance instance, PoseStack poseStack,
                               VertexConsumer consumer, int packedLight, int packedOverlay,
-                              float r, float g, float b, float a) {
+                              float r, float g, float b, float a, String[] renderBones) {
         Matrix4f pose = poseStack.last().pose();
         Matrix3f normalMat = poseStack.last().normal();
         SpGeoModel model = instance.getModel();
 
         for (SpBone bone : model.boneMap.values()) {
+            if (renderBones != null && renderBones.length > 0) {
+                if (!isBoneOrChildOf(bone, renderBones)) continue;
+            }
             if (bone.cubes.isEmpty()) continue;
 
             SpMatrix4 world = instance.getBoneMatrix(bone.name);
@@ -39,6 +42,17 @@ public final class SpGeoRenderer {
                            packedLight, packedOverlay, r, g, b, a);
             }
         }
+    }
+
+    private static boolean isBoneOrChildOf(SpBone bone, String[] renderBones) {
+        SpBone current = bone;
+        while (current != null) {
+            for (String rb : renderBones) {
+                if (current.name.equalsIgnoreCase(rb)) return true;
+            }
+            current = current.parent;
+        }
+        return false;
     }
 
     private static void renderCube(SpCube cube, SpBone bone, SpMatrix4 boneWorld,

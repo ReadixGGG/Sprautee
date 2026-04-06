@@ -129,6 +129,8 @@ public class SprauteNpcEntity extends PathfinderMob {
 
     public final java.util.List<org.zonarstudio.spraute_engine.registry.CustomDropRegistry.DropRule> customDrops = new java.util.concurrent.CopyOnWriteArrayList<>();
 
+    public String[] uiRenderBones = null;
+
     public SprauteNpcEntity(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
         this.setCanPickUpLoot(true);
