@@ -968,12 +968,33 @@ function renderTabs() {
     container.classList.add('hidden');
     document.getElementById('empty-state').classList.remove('hidden');
     document.getElementById('editor-mount').innerHTML = '';
+    document.getElementById('editor-mount').classList.add('hidden');
+    document.getElementById('editor-mount').style.display = 'none';
+    
+    const blocklyMount = document.getElementById('blockly-mount');
+    if (blocklyMount) {
+      blocklyMount.classList.add('hidden');
+      blocklyMount.style.display = 'none';
+    }
+    
+    document.querySelectorAll('.blocklyWidgetDiv, .blocklyTooltipDiv, .blocklyDropDownDiv').forEach(el => {
+      if (el) el.style.display = 'none';
+    });
+
     if (currentEditor) {
       currentEditor.destroy();
       currentEditor = null;
     }
     currentOpenFile = null;
     activeTabPath = null;
+    
+    isVisualMode = false; // Сбрасываем визуальный режим при закрытии всех вкладок
+    const btnToggleVisual = document.getElementById('btn-toggle-visual');
+    if (btnToggleVisual) {
+      btnToggleVisual.classList.add('hidden');
+      btnToggleVisual.innerHTML = '<span class="material-symbols-outlined text-[16px]">extension</span> Визуальный код';
+      btnToggleVisual.classList.remove('bg-primary/20', 'text-primary');
+    }
     return;
   }
   
@@ -2405,7 +2426,9 @@ async function toggleVisualMode() {
     btn.classList.add('bg-primary/20', 'text-primary');
     
     editorMount.classList.add('hidden');
+    editorMount.style.display = 'none';
     blocklyMount.classList.remove('hidden');
+    blocklyMount.style.display = 'block';
     
     if (!blocklyWorkspace) {
       blocklyWorkspace = Blockly.inject('blockly-mount', {
@@ -2454,9 +2477,14 @@ async function toggleVisualMode() {
     btn.classList.remove('bg-primary/20', 'text-primary');
     
     blocklyMount.classList.add('hidden');
+    blocklyMount.style.display = 'none';
     editorMount.classList.remove('hidden');
+    editorMount.style.display = 'block';
     
     Blockly.hideChaff();
+    document.querySelectorAll('.blocklyWidgetDiv, .blocklyTooltipDiv, .blocklyDropDownDiv').forEach(el => {
+      if (el) el.style.display = 'none';
+    });
     
     // Генерируем код из блоков
     if (blocklyWorkspace && currentEditor) {
